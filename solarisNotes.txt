@@ -1,0 +1,33 @@
+
+- Check of er een savebestand is
+
+
+function newGame() {
+   
+
+
+
+}
+
+class game 
+	modeEasy
+	
+	
+end class
+
+class ship
+	nameUser
+	shipType
+
+	healthCurrent
+	healthMax
+	
+	arrayNodes
+	arrayWeapons
+	arraySystems (power, oxygen ???, also hidden systems?)
+	arrayDrones
+	arrayCrew
+	arrayAugmentations
+end class
+
+
