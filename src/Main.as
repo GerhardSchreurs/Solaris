@@ -26,6 +26,8 @@ package {
 		
 		var objShip:Ship = new Ship;
 		trace(objShip.nameOfShip);
+		
+		var objSystem:SupportSystem = new SupportSystem(1);
 	}
 	
 	public function initMenu() {

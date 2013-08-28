@@ -1,6 +1,6 @@
 package  {
 	public class ShipClass {
-		var nameOfClass = "";
+		public var nameOfClass = "";
 		
 		public function ShipClass() {
 			

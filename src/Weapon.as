@@ -1,15 +1,15 @@
 package  {
 	public class Weapon {
-		var weaponType:int = 1;
+		public var weaponType:int = 1;
 
-		var nameOfWeapon:String = '';
-		var description:String = '';
+		public var nameOfWeapon:String = '';
+		public var description:String = '';
 
-		var powerRequirement:int = -1;
-		var damage:int = -1;
-		var shieldPiecing:int = -1;
-		var fireChance:int = -1;
-		var breachChance:int = -1;
+		public var powerRequirement:int = -1;
+		public var damage:int = -1;
+		public var shieldPiecing:int = -1;
+		public var fireChance:int = -1;
+		public var breachChance:int = -1;
 		
 		public function Weapon() {
 			

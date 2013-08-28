@@ -1,7 +1,7 @@
 package  {
 	public class Race {
-		var nameOfRace:String = '';
-		var description:String = '':
+		public var nameOfRace:String = '';
+		public var description:String = '':
 		
 		public function Race() {
 			

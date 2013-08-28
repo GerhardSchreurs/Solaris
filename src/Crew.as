@@ -1,6 +1,6 @@
 package  {
 	public class Crew {
-		var nameOfCrewMember:String = "";
+		public var nameOfCrewMember:String = "";
 		
 		
 		

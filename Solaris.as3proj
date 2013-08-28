@@ -76,6 +76,7 @@
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
     <hidden path="src\MainOLD.as" />
+    <hidden path="src\SupportSystem.as" />
   </hiddenPaths>
   <!-- Executed before build -->
   <preBuildCommand />
