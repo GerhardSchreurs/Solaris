@@ -1,0 +1,1077 @@
+package Ship {
+	import flash.display.MovieClip;
+	import flash.display3D.textures.VideoTexture;
+	import flash.geom.Point;
+	import flash.media.AVSource;
+	import Ship.Enum.Compas;
+	import Ship.Enum.Navigation;
+	import Ship.Enum.Thickness;
+	
+	public class Node {
+		public var ID:Number;
+		private var _parentNode:Node;
+		
+		public var X:Number;
+		public var Y:Number;
+		public var layout:LIB_Node;
+		
+		public var doorL:Boolean;
+		public var doorT:Boolean;
+		public var doorR:Boolean;
+		public var doorB:Boolean;
+		
+		public var borderL:Number;
+		public var borderT:Number;
+		public var borderR:Number;
+		public var borderB:Number;
+		
+		//These should be calculated
+		private var _canTOPL:Boolean;
+		private var _canTOPC:Boolean;
+		private var _canTOPR:Boolean;
+		private var _canMIDL:Boolean;
+		private var _canMIDR:Boolean;
+		private var _canBOTL:Boolean;
+		private var _canBOTC:Boolean;
+		private var _canBOTR:Boolean;
+		
+		private var _TOPLnode:Node;
+		private var _TOPCnode:Node;
+		private var _TOPRnode:Node;
+		private var _MIDLnode:Node;
+		private var _MIDRnode:Node;
+		private var _BOTLnode:Node;
+		private var _BOTCnode:Node;
+		private var _BOTRnode:Node;
+		
+		private var _singleConnectedNode:Node;
+		private var _connectedNodesCount:Number;
+		private var _connectedWalkableNodesCount:Number;
+		private var _connectedDoorsCount:Number;
+		
+		private var _parentNodeCount = 0;
+		
+		public var isChecked:Boolean;
+		public var isNextChecked:Boolean;
+		public var isDeadEnd:Boolean;
+		public var isConnectedToTarget:Boolean;
+		
+		public var F:Number;
+		public var G:Number;
+		public var H:Number;
+		
+		public function set parentNode(value:Node):void  {
+			this._parentNode = value;
+			
+			if (_parentNode != null) {
+				_parentNodeCount = _parentNode.parentNodeCount + 1;
+			}
+		}
+		
+		public function get parentNode():Node {
+			return this._parentNode;
+		}
+		
+		public function get parentNodeCount():Number {
+			return _parentNodeCount;
+		}
+		
+		public function clearNode():void {
+			this.parentNode = null;
+			this.isChecked = false;
+			this.isNextChecked = false;
+			this.isConnectedToTarget = false;
+			_parentNodeCount = 0;
+			_connectedNodesCount = 0;
+			_connectedWalkableNodesCount = 0;
+			_singleConnectedNode = null;
+		}
+		
+		public function set TOPLnode(value:Node):void {
+			if (value != undefined) {
+				_TOPLnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderT == 1) && (this.borderL == 1)) {
+					canTOPL = true;
+				}
+			}
+		}
+		public function set TOPCnode(value:Node):void {
+			if (value != undefined) {
+				_TOPCnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderT == 1) || (this.doorT)) {
+					canTOPC = true;
+				}
+			}
+		}
+		public function set TOPRnode(value:Node):void {
+			if (value != undefined) {
+				_TOPRnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderT == 1) && (this.borderR == 1)) {
+					canTOPR = true;
+				}
+			}
+		}
+		
+		public function set MIDLnode(value:Node):void {
+			if (value != undefined) {
+				_MIDLnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderL == 1) || (this.doorL)) {
+					canMIDL = true;
+				}
+			}
+		}
+		public function set MIDRnode(value:Node):void {
+			if (value != undefined) {
+				_MIDRnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderR == 1) || (this.doorR)) {
+					canMIDR = true;
+				}
+			}
+		}
+		public function set BOTLnode(value:Node):void {
+			if (value != undefined) {
+				_BOTLnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderL == 1) && (this.borderB == 1)) {
+					canBOTL = true;
+				}
+			}
+		}
+		public function set BOTCnode(value:Node):void {
+			if (value != undefined) {
+				_BOTCnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderB == 1) || (this.doorB)) {
+					canBOTC = true;
+				}
+			}
+		}
+		public function set BOTRnode(value:Node):void {
+			if (value != undefined) {
+				_BOTRnode = value;
+				_connectedNodesCount += 1;
+				_singleConnectedNode = value;
+				
+				if ((this.borderR == 1) && (this.borderB == 1)) {
+					canBOTR = true;
+				}
+			}
+		}
+		
+		public function get singleConnectedNode():Node {
+			return _singleConnectedNode;
+		}
+		
+		public function get connectedNodesCount() {
+			return _connectedNodesCount;
+		}
+		
+		public function get connectedDoorsCount() {
+			return _connectedDoorsCount;
+		}
+		
+		public function checkForDeadEnds():void {
+			if (this._connectedWalkableNodesCount == 1) {
+				this.isDeadEnd = true;
+				this.layout.fldID.text = "X";
+			} else if (this._connectedWalkableNodesCount == 3) {
+				if (this._connectedDoorsCount == 0) {
+					this.isDeadEnd = true;
+					this.layout.fldID.text = "X";
+				}
+			}
+		}
+		
+		public function get TOPLnode():Node {
+			return _TOPLnode;
+		}
+		public function get TOPCnode():Node {
+			return _TOPCnode;
+		}
+		public function get TOPRnode():Node {
+			return _TOPRnode;
+		}
+		public function get MIDLnode():Node {
+			return _MIDLnode;
+		}
+		public function get MIDRnode():Node {
+			return _MIDRnode;
+		}
+		public function get BOTLnode():Node {
+			return _BOTLnode;
+		}
+		public function get BOTCnode():Node {
+			return _BOTCnode;
+		}
+		public function get BOTRnode():Node {
+
+			return _BOTRnode;
+		}
+		
+		public function get canTOPL():Boolean {
+			return _canTOPL;
+		}
+		public function get canTOPC():Boolean {
+			return _canTOPC;
+		}
+		public function get canTOPR():Boolean {
+			return _canTOPR;
+		}
+		public function get canMIDL():Boolean {
+			return _canMIDL;
+		}
+		public function get canMIDR():Boolean {
+			return _canMIDR;
+		}
+		public function get canBOTL():Boolean {
+			return _canBOTL;
+		}
+		public function get canBOTC():Boolean {
+			return _canBOTC;
+		}
+		public function get canBOTR():Boolean {
+			return _canBOTR;
+		}
+		
+		public function set canTOPL(value:Boolean):void {
+			_canTOPL = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canTOPC(value:Boolean):void {
+			_canTOPC = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canTOPR(value:Boolean):void {
+			_canTOPR = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canMIDL(value:Boolean):void {
+			_canMIDL = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canMIDR(value:Boolean):void {
+			_canMIDR = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canBOTL(value:Boolean):void {
+			_canBOTL = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canBOTC(value:Boolean):void {
+			_canBOTC = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		public function set canBOTR(value:Boolean):void {
+			_canBOTR = value;
+			_connectedWalkableNodesCount += 1;
+		}
+		
+		
+		public function clearCheckMarks():void {
+			this.isChecked = false;
+			
+			var node:Node = this.parentNode;
+			
+			while (node.parentNode != null) {
+				node = node.parentNode;
+				node.isChecked = false;
+			}
+		}
+		
+		public function setConnectedToTargetFlags() {
+			if (canTOPL) {
+				TOPLnode.isConnectedToTarget = true;
+			}
+			if (canTOPC) {
+				TOPCnode.isConnectedToTarget = true;
+			}
+			if (canTOPR) {
+				TOPRnode.isConnectedToTarget = true;
+			}
+			if (canMIDL) {
+				MIDLnode.isConnectedToTarget = true;
+			}
+			if (canMIDR) {
+				MIDRnode.isConnectedToTarget = true;
+			}
+			if (canBOTL) {
+				BOTLnode.isConnectedToTarget = true;
+			}
+			if (canBOTC) {
+				BOTCnode.isConnectedToTarget = true;
+			}
+			if (canBOTR) {
+				BOTRnode.isConnectedToTarget = true;
+			}
+		}
+		
+		public function traverseConnectedNodesOLD(fromNode:Node, toNode:Node, foundEndNode:Object):Vector.<Node> {
+			var connectedNodes:Vector.<Node> = new Vector.<Node>();
+			var connectedNodesArray:Array = new Array();
+			
+			var lowestF:Number = 10000;
+			var currentF:Number = 10000;
+			
+			this.isChecked = true;
+			
+			if (canTOPL && (!TOPLnode.isChecked || (TOPLnode.isChecked && TOPLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPLnode, fromNode, toNode, 11);
+				connectedNodesArray.push(TOPLnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPLnode.ID == toNode.ID);
+				}
+			}
+ 			if (canTOPC && (!TOPCnode.isChecked || (TOPCnode.isChecked && TOPCnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPCnode, fromNode, toNode, 10);
+				connectedNodesArray.push(TOPCnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPCnode.ID == toNode.ID);
+				}
+			}
+			if (canTOPR && (!TOPRnode.isChecked || (TOPRnode.isChecked && TOPRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPRnode, fromNode, toNode, 11);
+				connectedNodesArray.push(TOPRnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPRnode.ID == toNode.ID);
+				}
+			}
+			if (canMIDL && (!MIDLnode.isChecked || (MIDLnode.isChecked && MIDLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(MIDLnode, fromNode, toNode, 10);
+				connectedNodesArray.push(MIDLnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (MIDLnode.ID == toNode.ID);
+				}
+			}
+			if (canMIDR && (!MIDRnode.isChecked || (MIDRnode.isChecked && MIDRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(MIDRnode, fromNode, toNode, 11);
+				connectedNodesArray.push(MIDRnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (MIDRnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTL && (!BOTLnode.isChecked || (BOTLnode.isChecked && BOTLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTLnode, fromNode, toNode, 11);
+				connectedNodesArray.push(BOTLnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTLnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTC && (!BOTCnode.isChecked || (BOTCnode.isChecked && BOTCnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTCnode, fromNode, toNode, 10);
+				connectedNodesArray.push(BOTCnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTCnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTR && (!BOTRnode.isChecked || (BOTRnode.isChecked && BOTRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTRnode, fromNode, toNode, 11);
+				connectedNodesArray.push(BOTRnode);
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTRnode.ID == toNode.ID);
+				}
+			}
+			
+			connectedNodesArray.sortOn("F", Array.NUMERIC | Array.DESCENDING);
+			
+			while (connectedNodesArray.length > 0) { 
+				connectedNodes.push(connectedNodesArray.pop());
+			}
+			
+			
+			/*
+			if (canTOPL && (!TOPLnode.isChecked || (TOPLnode.isChecked && TOPLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPLnode, fromNode, toNode, 14);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(TOPLnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(TOPLnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPLnode.ID == toNode.ID);
+				}
+			}
+ 			if (canTOPC && (!TOPCnode.isChecked || (TOPCnode.isChecked && TOPCnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPCnode, fromNode, toNode, 10);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(TOPCnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(TOPCnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPCnode.ID == toNode.ID);
+				}
+			}
+			if (canTOPR && (!TOPRnode.isChecked || (TOPRnode.isChecked && TOPRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(TOPRnode, fromNode, toNode, 14);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(TOPRnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(TOPRnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (TOPRnode.ID == toNode.ID);
+				}
+			}
+			if (canMIDL && (!MIDLnode.isChecked || (MIDLnode.isChecked && MIDLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(MIDLnode, fromNode, toNode, 10);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(MIDLnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(MIDLnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (MIDLnode.ID == toNode.ID);
+				}
+			}
+			if (canMIDR && (!MIDRnode.isChecked || (MIDRnode.isChecked && MIDRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(MIDRnode, fromNode, toNode, 10);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(MIDRnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(MIDRnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (MIDRnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTL && (!BOTLnode.isChecked || (BOTLnode.isChecked && BOTLnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTLnode, fromNode, toNode, 14);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(BOTLnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(BOTLnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTLnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTC && (!BOTCnode.isChecked || (BOTCnode.isChecked && BOTCnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTCnode, fromNode, toNode, 10);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(BOTCnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(BOTCnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTCnode.ID == toNode.ID);
+				}
+			}
+			if (canBOTR && (!BOTRnode.isChecked || (BOTRnode.isChecked && BOTRnode.isConnectedToTarget))) {
+				currentF = pathfindCalculate(BOTRnode, fromNode, toNode, 14);
+				
+				if (currentF < lowestF) {
+					lowestF = currentF;
+					connectedNodes = new Vector.<Node>();
+					connectedNodes.push(BOTRnode);
+				} else if (currentF == lowestF) {
+					connectedNodes.push(BOTRnode);
+				}
+				
+				if (foundEndNode.found == false) {
+					foundEndNode.found = (BOTRnode.ID == toNode.ID);
+				}
+			}
+			*/
+			
+			return connectedNodes;
+		}
+		
+		public function uncheckParentChildNodes():void {
+			trace("uncheckParentChildNodes");
+			
+			//optimisation here?
+			//we do not which to recalculate F,G,H
+			var parentNode:Node = this.parentNode;
+			
+			if (parentNode.TOPLnode) {
+				parentNode.TOPLnode.isChecked = false;
+			}
+			if (parentNode.TOPCnode) {
+				parentNode.TOPCnode.isChecked = false;
+			}
+			if (parentNode.TOPRnode) {
+				parentNode.TOPRnode.isChecked = false;
+			}
+			if (parentNode.MIDLnode) {
+				parentNode.MIDLnode.isChecked = false;
+			}
+			if (parentNode.MIDRnode) {
+				parentNode.MIDRnode.isChecked = false;
+			}
+			if (parentNode.BOTLnode) {
+				parentNode.BOTLnode.isChecked = false;
+			}
+			if (parentNode.BOTCnode) {
+				parentNode.BOTCnode.isChecked = false;
+			}
+			if (parentNode.BOTRnode) {
+				parentNode.BOTRnode.isChecked = false;
+			}
+			
+			/*
+			if (parentNode.canTOPL) {
+				parentNode.TOPLnode.isChecked = false;
+			}
+			if (parentNode.canTOPC) {
+				parentNode.TOPCnode.isChecked = false;
+			}
+			if (parentNode.canTOPR) {
+				parentNode.TOPRnode.isChecked = false;
+			}
+			if (parentNode.canMIDL) {
+				parentNode.MIDLnode.isChecked = false;
+			}
+			if (parentNode.canMIDR) {
+				parentNode.MIDRnode.isChecked = false;
+			}
+			if (parentNode.canBOTL) {
+				parentNode.BOTLnode.isChecked = false;
+			}
+			if (parentNode.canBOTC) {
+				parentNode.BOTCnode.isChecked = false;
+			}
+			if (parentNode.canBOTR) {
+				parentNode.BOTRnode.isChecked = false;
+			}
+			*/
+			
+			this.parentNode.isChecked = true;
+			
+		}
+		
+		public function pathfindCalculateNext(targetNode:Node, fromNode:Node, toNode:Node, gCost:Number):Number {
+			targetNode.isNextChecked = true;
+			targetNode.G = gCost;
+			targetNode.H = pathfindCalculateH(targetNode, toNode);
+			targetNode.F = targetNode.G + targetNode.H;
+			
+			return targetNode.F;
+		}
+		
+		public function pathfindCalculate(targetNode:Node, fromNode:Node, toNode:Node, gCost:Number, isNextCheckFlag:Boolean = false):Number {
+			targetNode.isChecked = (isNextCheckFlag == false);
+			targetNode.isNextChecked = isNextCheckFlag;
+			targetNode.parentNode = this;
+			targetNode.G = gCost;
+			targetNode.H = pathfindCalculateH(targetNode, toNode);
+			targetNode.F = targetNode.G + targetNode.H;
+			
+			targetNode.layout.fldID.text = targetNode.ID.toString();
+			targetNode.layout.fldF.text = targetNode.F.toString();
+			//targetNode.layout.fldG.text = targetNode.G.toString();
+			//targetNode.layout.fldH.text = targetNode.H.toString();
+			
+			//targetNode.layout.fldID.text = "i";
+			
+			if (isNextCheckFlag) {
+				trace("pathfindCalculate ID = " + targetNode.ID + " parentID = " + targetNode.parentNode.ID + " (x=" + targetNode.X + ",y=" + targetNode.Y + ") f=" + targetNode.F + ",g=" + targetNode.G + ",h=" + targetNode.H + " " + isNextCheckFlag.toString()); 
+			} else {
+				trace("pathfindCalculate ID = " + targetNode.ID + " parentID = " + targetNode.parentNode.ID + " (x=" + targetNode.X + ",y=" + targetNode.Y + ") f=" + targetNode.F + ",g=" + targetNode.G + ",h=" + targetNode.H + " " + isNextCheckFlag.toString()); 
+			}
+		
+			return targetNode.F;
+		}
+		
+		public function pathfindCalculateH(fromNode:Node, toNode:Node):Number {
+			//((Math.abs(this.posX - nodeStop.posX)) + (Math.abs(this.posY - nodeStop.posY))) * 10
+			
+			
+			//Manhattan
+			return ((Math.abs(fromNode.X - toNode.X)) + (Math.abs(fromNode.Y - toNode.Y))) * 10;
+			
+			
+			//Manhattan 2
+			
+			/*
+			var XX:Number = (toNode.X + 5) - fromNode.X;
+			var YY:Number = toNode.Y - fromNode.Y;
+			return Math.sqrt(XX*XX + YY*YY);
+			return Math.sqrt(XX*XX + YY*YY);
+			*/
+		}
+		
+		public function pathFind(fromNode:Node, toNode:Node):Node {
+			//Check all connected nodes
+			var fromNodeIsDeadEnd:Boolean = fromNode.isDeadEnd;
+			var toNodeIsDeadEnd:Boolean = toNode.isDeadEnd;
+			
+			fromNode.isDeadEnd = false;
+			toNode.isDeadEnd = false;
+			
+			var connectedNode:Node = fromNode;
+			var loopCounter:Number = 0;
+			
+			while (connectedNode != toNode) {
+				trace("pathFind ID = " + connectedNode.ID);
+				
+				loopCounter += 1;
+				
+				if (loopCounter == 100) {
+					break;
+				}
+				
+				connectedNode = connectedNode.findConnectedNode(fromNode, toNode);
+				trace("");
+			}
+			
+			fromNode.isDeadEnd = fromNodeIsDeadEnd;
+			toNode.isDeadEnd = toNodeIsDeadEnd;
+			
+			return connectedNode;
+		}
+		
+		public function getConnectedNodes(fromNode:Node, toNode:Node):Array {
+			var connectedNodes:Array = new Array();
+			var currentF:Number;
+			
+			if (canTOPL && (!TOPLnode.isChecked) && (!TOPLnode.isDeadEnd)) {
+				currentF = pathfindCalculate(TOPLnode, fromNode, toNode, 14);
+				connectedNodes.push(TOPLnode);
+			}
+ 			if (canTOPC && (!TOPCnode.isChecked) && (!TOPCnode.isDeadEnd)) {
+				currentF = pathfindCalculate(TOPCnode, fromNode, toNode, 10);
+				connectedNodes.push(TOPCnode);
+			}
+			if (canTOPR && (!TOPRnode.isChecked) && (!TOPRnode.isDeadEnd)) {
+				currentF = pathfindCalculate(TOPRnode, fromNode, toNode, 14);
+				connectedNodes.push(TOPRnode);
+			}
+			if (canMIDL && (!MIDLnode.isChecked) && (!MIDLnode.isDeadEnd)) {
+				currentF = pathfindCalculate(MIDLnode, fromNode, toNode, 10);
+				connectedNodes.push(MIDLnode);
+			}
+			if (canMIDR && (!MIDRnode.isChecked) && (!MIDRnode.isDeadEnd)) {
+				currentF = pathfindCalculate(MIDRnode, fromNode, toNode, 10);
+				connectedNodes.push(MIDRnode);
+			}
+			if (canBOTL && (!BOTLnode.isChecked) && (!BOTLnode.isDeadEnd)) {
+				currentF = pathfindCalculate(BOTLnode, fromNode, toNode, 14);
+				connectedNodes.push(BOTLnode);
+			}
+			if (canBOTC && (!BOTCnode.isChecked) && (!BOTCnode.isDeadEnd)) {
+				currentF = pathfindCalculate(BOTCnode, fromNode, toNode, 10);
+				connectedNodes.push(BOTCnode);
+			}
+			if (canBOTR && (!BOTRnode.isChecked) && (!BOTRnode.isDeadEnd)) {
+				currentF = pathfindCalculate(BOTRnode, fromNode, toNode, 14);
+				connectedNodes.push(BOTRnode);
+			}
+			
+			return connectedNodes;
+		}
+		
+		public function getConnectedTestNodes(t:Node, fromNode:Node, toNode:Node):Array {
+			var connectedTestNodes:Array = new Array();
+			var currentF:Number;
+			
+			if (t.canTOPL && ((!t.TOPLnode.isChecked) && (!t.TOPLnode.isNextChecked) && (!t.TOPLnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.TOPLnode, fromNode, toNode, 14, true);
+				connectedTestNodes.push(t.TOPLnode);
+			}
+ 			if (t.canTOPC && ((!t.TOPCnode.isChecked) && (!t.TOPCnode.isNextChecked) && (!t.TOPCnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.TOPCnode, fromNode, toNode, 10, true);
+				connectedTestNodes.push(t.TOPCnode);
+			}
+			if (t.canTOPR && ((!t.TOPRnode.isChecked) && (!t.TOPRnode.isNextChecked) && (!t.TOPRnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.TOPRnode, fromNode, toNode, 14, true);
+				connectedTestNodes.push(t.TOPRnode);
+			}
+			if (t.canMIDL && ((!t.MIDLnode.isChecked) && (!t.MIDLnode.isNextChecked) && (!t.MIDLnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.MIDLnode, fromNode, toNode, 10, true);
+				connectedTestNodes.push(t.MIDLnode);
+			}
+			if (t.canMIDR && ((!t.MIDRnode.isChecked) && (!t.MIDRnode.isNextChecked) && (!t.MIDRnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.MIDRnode, fromNode, toNode, 10, true);
+				connectedTestNodes.push(t.MIDRnode);
+			}
+			if (t.canBOTL && ((!t.BOTLnode.isChecked) && (!t.BOTLnode.isNextChecked) && (!t.BOTLnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.BOTLnode, fromNode, toNode, 14, true);
+				connectedTestNodes.push(t.BOTLnode);
+			}
+			if (t.canBOTC && ((!t.BOTCnode.isChecked) && (!t.BOTCnode.isNextChecked) && (!t.BOTCnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.BOTCnode, fromNode, toNode, 10, true);
+				connectedTestNodes.push(t.BOTCnode);
+			}
+			if (t.canBOTR && ((!t.BOTRnode.isChecked) && (!t.BOTRnode.isNextChecked) && (!t.BOTRnode.isDeadEnd))) {
+				currentF = t.pathfindCalculate(t.BOTRnode, fromNode, toNode, 14, true);
+				connectedTestNodes.push(t.BOTRnode);
+			}
+			
+			return connectedTestNodes;
+		}
+		
+		public function sliceNodeArrayOnFScore(nodes:Array):Array {
+			var lowestFscore:Number = nodes[0].F;
+			
+			for (var i:Number = 0; i < nodes.length; i++) {
+				if (nodes[i].F > lowestFscore) {
+					nodes = nodes.slice(0, i);
+					break;
+				}
+			}
+			
+			return nodes;
+		}
+		
+		public function getLowestFscoreIndex(nodes:Array):Number {
+			var lowestFscore:Number = nodes[0].F;
+			var lowestFscoreIndex:Number = 0;
+			
+			if (nodes.length == 1) {
+				return lowestFscoreIndex;
+			} else {
+				if (nodes[1].F > lowestFscore) {
+					//only one attached node
+					return 0;
+				} else {
+					//multiple nodes attached, give up
+					return -1;
+				}
+			}
+		}
+		
+		
+    public function findConnectedNode(fromNode:Node, toNode:Node):Node {
+			this.isChecked = true;
+			var connectedNodes:Array = getConnectedNodes(fromNode, toNode);
+			
+			if (connectedNodes.length == 0) {
+				trace("NO CONNECTED NODES");
+			} else if (connectedNodes.length == 1) {
+				trace("ONE CONNECTED NODE");
+				return connectedNodes[0];
+			} else { 
+				connectedNodes.sortOn("F", Array.NUMERIC);
+				
+				if (connectedNodes[0].F < connectedNodes[1].F) {
+					trace("MULTIPLE CONNECTED NODES, with single lowest F score");
+					return connectedNodes[0];
+				} else {
+					trace("MULTIPLE CONNECTED NODES, some have same F score (" + connectedNodes[0].F.toString() + ")");
+					connectedNodes = sliceNodeArrayOnFScore(connectedNodes);
+					
+					var testNodeScore:Vector.<Number> = new Vector.<Number>(connectedNodes.length);
+					var maxLength:Number = 3;
+					var innerCounter:Number = 0;
+				
+					for (var i:Number = 0; i < connectedNodes.length; i++) {
+						var testNode:Node = connectedNodes[i];
+						var testNodes:Array;
+						
+						for (var j:Number = 0; j < maxLength; j++) {
+							trace("pathing : " + testNode.ID + " (" + i.toString() + ")(" + j.toString() + ")");
+							
+							//we are going to try to test 3 connected testNodes;
+							
+							innerCounter = j;
+							testNodes = getConnectedTestNodes(testNode, fromNode, toNode);
+							
+							if (testNodes.length == 0) {
+								//No connected nodes, break;
+								testNodeScore[i] = 10000 + i;
+								break;
+							} else {
+								//found one or multiple connected nodes
+								testNodes.sortOn("F", Array.NUMERIC);
+								var lowestIndex:Number = getLowestFscoreIndex(testNodes);
+								
+								if (lowestIndex == -1) {
+									//found multiple nodes with same value, can't continue
+									maxLength = j;
+									testNodeScore[i] = testNodes[0].F;
+									break;
+								} else {
+									testNodeScore[i] = testNodes[lowestIndex].F;
+									testNode = testNodes[lowestIndex];
+								}
+							}
+							
+							if (testNode == toNode) {
+								break;
+							}
+						}
+					}
+					
+					//what is our lowestIndex?
+					var lowestIndex:Number = 0;
+					var lowestNumber:Number = testNodeScore[0];
+					
+					for (var i:Number = 1; i < testNodeScore.length; i++) {
+						if (testNodeScore[i] < lowestNumber) {
+							lowestNumber = testNodeScore[i];
+							lowestIndex = i;
+						}
+					}
+					
+					return connectedNodes[lowestIndex];
+				}
+			}
+			
+			return null;
+		}
+		
+		public function findNextNode(testNode:Node, fromNode:Node, toNode:Node) {
+			//Unused?
+			
+			var connectedNodes:Array = new Array();
+			var currentF:Number = 0;
+			
+			if (canTOPL && (!TOPLnode.isChecked) && (!TOPLnode.isNextChecked)) {
+				currentF = pathfindCalculateNext(TOPLnode, fromNode, toNode, 14);
+				connectedNodes.push(TOPLnode);
+			}
+ 			if (canTOPC && (!TOPCnode.isChecked)) {
+				currentF = pathfindCalculate(TOPCnode, fromNode, toNode, 10);
+				connectedNodes.push(TOPCnode);
+			}
+			if (canTOPR && (!TOPRnode.isChecked)) {
+				currentF = pathfindCalculate(TOPRnode, fromNode, toNode, 14);
+				connectedNodes.push(TOPRnode);
+			}
+			if (canMIDL && (!MIDLnode.isChecked)) {
+				currentF = pathfindCalculate(MIDLnode, fromNode, toNode, 10);
+				connectedNodes.push(MIDLnode);
+			}
+			if (canMIDR && (!MIDRnode.isChecked)) {
+				currentF = pathfindCalculate(MIDRnode, fromNode, toNode, 10);
+				connectedNodes.push(MIDRnode);
+			}
+			if (canBOTL && (!BOTLnode.isChecked)) {
+				currentF = pathfindCalculate(BOTLnode, fromNode, toNode, 14);
+				connectedNodes.push(BOTLnode);
+			}
+			if (canBOTC && (!BOTCnode.isChecked)) {
+				currentF = pathfindCalculate(BOTCnode, fromNode, toNode, 10);
+				connectedNodes.push(BOTCnode);
+			}
+			if (canBOTR && (!BOTRnode.isChecked)) {
+				currentF = pathfindCalculate(BOTRnode, fromNode, toNode, 14);
+				connectedNodes.push(BOTRnode);
+			}
+			
+			return null;
+		}
+
+		
+		
+		
+		
+		public function pathfindOLD(searchList:Vector.<Node>, fromNode:Node, toNode:Node):void {
+			//check 8 connected nodes;
+			this.isChecked = true;
+
+			if (canTOPL && (!TOPLnode.isChecked)) {
+				pathfindCalculate(TOPLnode, fromNode, toNode, 11);
+				searchList.push(TOPLnode);
+			}
+			if (canTOPC && (!TOPCnode.isChecked)) {
+				pathfindCalculate(TOPCnode, fromNode, toNode, 10);
+				searchList.push(TOPCnode);
+			}
+			if (canTOPR && (!TOPRnode.isChecked)) {
+				pathfindCalculate(TOPRnode, fromNode, toNode, 11);
+				searchList.push(TOPRnode);
+			}
+			if (canMIDL && (!MIDLnode.isChecked)) {
+				pathfindCalculate(MIDLnode, fromNode, toNode, 10);
+				searchList.push(MIDLnode);
+			}
+			if (canMIDR && (!MIDRnode.isChecked)) {
+				pathfindCalculate(MIDRnode, fromNode, toNode, 10);
+				searchList.push(MIDRnode);
+			}
+			if (canBOTL && (!BOTLnode.isChecked)) {
+				pathfindCalculate(BOTLnode, fromNode, toNode, 11);
+				searchList.push(BOTLnode);
+			}
+			if (canBOTC && (!BOTCnode.isChecked)) {
+				pathfindCalculate(BOTCnode, fromNode, toNode, 10);
+				searchList.push(BOTCnode);
+			}
+			if (canBOTR && (!BOTRnode.isChecked)) {
+				pathfindCalculate(BOTRnode, fromNode, toNode, 11);
+				searchList.push(BOTRnode);
+			}
+		}
+		
+		public function Node() {
+			layout = new LIB_Node();
+			
+			_singleConnectedNode = null;
+			_connectedNodesCount = 0;
+			_connectedWalkableNodesCount = 0;
+
+			setBorders(Thickness.NONE, Thickness.NONE, Thickness.NONE, Thickness.NONE);
+			setDoors(false, false, false, false);
+			
+			layout.borderThin.visible = true;
+			
+			layout.nodePoint.visible = false;
+			
+			layout.borderNormalL.visible = false;
+			layout.borderNormalT.visible = false;
+			layout.borderNormalR.visible = false;
+			layout.borderNormalB.visible = false;
+			
+			layout.borderThickL.visible = false;
+			layout.borderThickT.visible = false;
+			layout.borderThickB.visible = false;
+			layout.borderThickR.visible = false;
+			
+			layout.fldID.mouseEnabled = false;
+			layout.fldF.mouseEnabled = false;
+			//layout.fldG.mouseEnabled = false;
+			//layout.fldH.mouseEnabled = false;
+		}
+		
+		public function showPoint ():void {
+			layout.nodePoint.visible = true;
+		}
+		
+		public function hidePoint():void {
+			layout.nodePoint.visible = false;
+		}
+		
+		public function setDoors(L:Boolean, T:Boolean, R:Boolean, B:Boolean):void {
+			layout.doorL.visible = L;
+			layout.doorT.visible = T;
+			layout.doorR.visible = R;
+			layout.doorB.visible = B;
+			
+			if (L == false && T == false && R == false && B == false) {
+				_connectedDoorsCount = 0;
+			} else if (L == true && T == true && R == true && B == true) {
+				_connectedDoorsCount = 3;
+			} else {
+				_connectedDoorsCount = 1;
+			}
+			
+			doorL = L;
+			doorT = T;
+			doorR = R;
+			doorB = B;
+		}
+		
+		public function setBorders(thicknessL:Number, thicknessT:Number, thicknessR:Number, thicknessB:Number):void {
+			setBorderL(thicknessL);
+			setBorderT(thicknessT);
+			setBorderR(thicknessR);
+			setBorderB(thicknessB);
+		}
+		
+		public function setBorderL(thickness:Number):void {
+			this.borderL = thickness;
+			
+			if (thickness == Thickness.NONE) {
+				layout.borderNormalL.visible = false;
+				layout.borderThickL.visible = false;
+			} else if (thickness == Thickness.NORMAL) {
+				layout.borderNormalL.visible = true;
+				layout.borderThickL.visible = false;
+			} else if (thickness == Thickness.THICK) {
+				layout.borderNormalL.visible = true;
+				layout.borderThickL.visible = true;
+			}
+		}
+		
+		public function setBorderT(thickness:Number):void {
+			this.borderT = thickness;
+			
+			if (thickness == Thickness.NONE) {
+				layout.borderNormalT.visible = false;
+				layout.borderThickT.visible = false;
+			} else if (thickness == Thickness.NORMAL) {
+				layout.borderNormalT.visible = true;
+				layout.borderThickT.visible = false;
+			} else if (thickness == Thickness.THICK) {
+				layout.borderNormalT.visible = true;
+				layout.borderThickT.visible = true;
+			}			
+		}
+		
+		public function setBorderR(thickness:Number):void {
+			this.borderR = thickness;
+			
+			if (thickness == Thickness.NONE) {
+				layout.borderNormalR.visible = false;
+				layout.borderThickR.visible = false;
+			} else if (thickness == Thickness.NORMAL) {
+				layout.borderNormalR.visible = true;
+				layout.borderThickR.visible = false;
+			} else if (thickness == Thickness.THICK) {
+				layout.borderNormalR.visible = true;
+				layout.borderThickR.visible = true;
+			}			
+		}
+		
+		public function setBorderB(thickness:Number):void {
+			this.borderB = thickness;
+			
+			if (thickness == Thickness.NONE) {
+				layout.borderNormalB.visible = false;
+				layout.borderThickB.visible = false;
+			} else if (thickness == Thickness.NORMAL) {
+				layout.borderNormalB.visible = true;
+				layout.borderThickB.visible = false;
+			} else if (thickness == Thickness.THICK) {
+				layout.borderNormalB.visible = true;
+				layout.borderThickB.visible = true;
+			}			
+		}
+	}
+}

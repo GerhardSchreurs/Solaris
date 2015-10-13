@@ -1,6 +1,6 @@
 package  {
 	import flash.utils.Dictionary;
-	public class Ship {
+	public class ShipOLD {
 		public var nameOfShip:String = 'hihi';
 
 		var shipClass:ShipClass;
@@ -13,20 +13,23 @@ package  {
 		var supportSystems:Dictionary = new Dictionary();
 		
 		
-		public function Ship():void {
+		public function ShipOLD():void {
 			
 			var item1:ShipPropertyItem= new ShipPropertyItem("Needs pilot", 0);
 			var item2:ShipPropertyItem = new ShipPropertyItem("1/4 evasion", 15);
 			var item3:ShipPropertyItem = new ShipPropertyItem("1/2 evasion", 25);
 			var items:Vector.<ShipPropertyItem> = new <ShipPropertyItem>[item1, item2, item3];
-			var piloting:ShipProperty= new ShipProperty(items);
-			
+			//var piloting:ShipProperty= new ShipProperty(items);
+			var piloting:ShipPropertyClass = new ShipPropertyClass(items);
 
 			
+			
 			var newLevel = 0;
-			var success = setProperty(piloting, newLevel);	
+			var success = piloting.setProperty(newLevel);	
 			if (success == false) {
 				trace("failed to set level to ", newLevel);
+			} else {
+				supportSystems[piloting] = newLevel;
 			}
 		}
 		

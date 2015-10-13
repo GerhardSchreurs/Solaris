@@ -1,8 +1,11 @@
 package {
+	import Dialog.Dialog;
   import flash.display.Sprite;
   import flash.events.Event;
   import flash.display.StageAlign;
   import flash.display.StageScaleMode;
+	import flash.events.MouseEvent;
+	import Ship.Node;
 	
   [Frame(factoryClass="Preloader")]
 	
@@ -18,29 +21,44 @@ package {
 	private function init(e:Event = null):void {
 	  removeEventListener(Event.ADDED_TO_STAGE, init);
 	  stage.scaleMode = StageScaleMode.SHOW_ALL;
+		stage.addEventListener(MouseEvent.RIGHT_CLICK, function(e:Event) { } );
 	  
 	  var objSound:LIB_Music_track1  = new LIB_Music_track1();
 	  //objSound.play();
 	  
 	  initMenu();
-		
+		//initHangar();
+		/*
 		var objShip:Ship = new Ship;
 		trace(objShip.nameOfShip);
 		
 		var objSystem:SupportSystem = new SupportSystem(1);
+		*/
 	}
 	
 	public function initMenu() {
 	  var objMenu:Menu = new Menu();
 	  objMenu.name = 'objMenu';
 	  addChild(objMenu);
+		
+		var node:Node = new Node();
+		addChild(node.layout);
+		
 	}
 	
 	public function initHangar():void {
-	  removeChild(getChildByName('objMenu'));
+		cleanUp();
+		
 	  var objHangar:Hangar = new Hangar();
 	  objHangar.name = 'objHangar';
 	  addChild(objHangar);
+	}
+	
+	function cleanUp():void {
+		if (getChildByName('objMenu') != undefined) {
+			removeChild(getChildByName('objMenu'));
+		}
+		
 	}
 	
 
