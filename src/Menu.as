@@ -1,15 +1,17 @@
 package  {
 	import Dialog.Dialog;
-  import flash.display.Sprite;
-  import flash.events.Event;
-  import flash.events.MouseEvent;
+	import flash.display.Sprite;
+	import flash.events.Event;
+	import flash.events.MouseEvent;
 
-  public class Menu extends Sprite {
+	public class Menu extends Sprite {
+		private var UI:LIB_Menu;
+		
 		public function Menu() {
 			this.addEventListener(Event.REMOVED, handleRemoved, false, 0, true);	
 			
-			var objMenu:LIB_Menu = new LIB_Menu;
-			addChild(objMenu);
+			UI = new LIB_Menu;
+			addChild(UI);
 			createButtons();
 		}
 		

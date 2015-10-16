@@ -1,23 +1,23 @@
 package Ship {
+	//{ Imports
 	import flash.events.Event;
+	import flash.utils.setTimeout;
 	import Crew.ICrew;
 	import flash.display.MovieClip;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.events.NetDataEvent;
-	
+	import Ship.Events.PathFindEvent;
 	import flash.display.Sprite;
     import flash.geom.Point;
+	//}  
 	
 	//should be treated as an abstract class
-	
-	
-	public class IShip {
-		//new
+	public class IShip extends Sprite {
 		private var _openNodes:Vector.<Node>;
 		private var _startNode:Node;
 		private var _stopNode:Node;
-		
+		private var _queueMovement:Vector.<Movement>;
 		private var _shipName:String;
 		private var _shipLayout:MovieClip;
 		private var _nodes:Vector.<Node>;
@@ -28,50 +28,29 @@ package Ship {
 		private var _offsetMapY:Number;
 		private const _offsetCrewX:Number = 9;
 		private const _offsetCrewY:Number = 11;
-		
-		private var _selectedCrewMember:ICrew;
+		private var _selectedCrewMembers:Vector.<ICrew>;
 		private var _selectedNode:Node;
-		
 		
 		public function IShip() {
 			_nodes = new Vector.<Node>();
 			_crew = new Vector.<ICrew>();
-		}
-		
-		
-		/**
-		 * Moves an object from its current position to a given point and stops.
-		 * @param	obj 	The Object to be moved.
-		 * @param	target 	The target Point where the object should stop.
-		 * @param	speed 	How fast should the object travel per frame.
-		 * @param	objRot	Do you want to rotate the object to face the direction of travel?
-		 */
-		public function moveToPoint(obj:Object, target:Point, speed:Number = 1, objRot:Boolean = false):void
-		{
-			// get the difference between obj and target points.
-			var diff:Point = target.subtract(new Point(obj.x, obj.y)); 
-			var dist = diff.length;
+			_selectedCrewMembers = new Vector.<ICrew>();
+			_queueMovement = new Vector.<Movement>;
 			
-			if (dist <= speed)  // if we will go past when we move just put it in place.
-			{
-				obj.x = target.x;
-				obj.y = target.y;
-			}
-			else // If we are not there yet. Keep moving.
-			{ 
-				diff.normalize(1);
-				obj.x += diff.x * speed;
-				obj.y += diff.y * speed;
-				
-				if (objRot) // If we want to rotate with our movement direction.
-				{ 
-					obj.rotation = Math.atan2(diff.y, diff.x) * (180 / Math.PI) + 90;
-				}
-			}
+			this.addEventListener(Event.ENTER_FRAME, handleEnterFrame, false, 0, false);
+			this.addEventListener(Event.REMOVED, handleRemoved, false, 0, true);
+			this.addEventListener(PathFindEvent.RESULT, handlePathFindEvent, false, 0, true);
 		}
+
+		//{ Dispose
+		public function dispose():void {
+			//TODO, implement
+			this.removeEventListener(Event.REMOVED, handleRemoved);
+			this.removeEventListener(Event.ENTER_FRAME, handleEnterFrame);
+		}
+		//}
 		
-		
-		
+		//{ Assessors
 		public function get mapOffsetX():Number {
 			return _offsetMapX;
 		}
@@ -108,16 +87,14 @@ package Ship {
 			this._shipLayout = value;
 		}
 		
-		protected function addNode(node:Node):void {
-			_nodes.push(node);
-			
-			_shipLayout.addChild(node.layout);
-			node.layout.x = (node.X * 34) + _offsetMapX;
-			node.layout.y = (node.Y * 34) + _offsetMapY;
-			node.layout.name = node.ID.toString();
-			node.layout.addEventListener(MouseEvent.RIGHT_CLICK, handleNodeRightClick);
+		public function get shipCrew():Vector.<ICrew> {
+			return _crew;
 		}
-
+		//}
+		
+		//{ Crew init
+		protected function constructCrew():void { };
+		
 		protected function addCrew(crew:ICrew, nodeIndex:Number):void {
 			crew.ID = _crewIndex;
 			crew.node = _nodes[nodeIndex];
@@ -132,64 +109,31 @@ package Ship {
 			
 			_crewIndex += 1;
 			_shipLayout.addChild(crew.crewLayout);
-		}
+		}		
+
+		//}
 		
-		public function handleCrewClick(e:MouseEvent):void {
-			if (_selectedCrewMember != undefined) {
-				_selectedCrewMember.deselectMember();
-			}
-			
-			var crewLayout:MovieClip = e.currentTarget as MovieClip;
-			var crewMember:ICrew = _crew[Number(crewLayout.name)];
-			crewMember.selectMember();
-			_selectedCrewMember = crewMember;
-			
-			trace(crewLayout.name);
-			
-			
-			//var crewID:Number = Number((e.currentTarget as MovieClip).name);
-			//var crew:ICrew = _crew[crewID];
-			
-			trace(crewLayout);
-		}
-		
-		private function moveCrew(e:Event):void {
-		
-		}
-		
-		
-		public function handleNodeRightClick(e:MouseEvent):void {
-			if (_selectedCrewMember != undefined) {
-				if (_selectedNode != undefined) {
-					_selectedNode.hidePoint();
-				}
-				
-				var target:MovieClip = e.target as MovieClip;
-				var node:Node = _nodes[Number(MovieClip(e.target).parent.name)];
-				node.showPoint();
-				
-				_selectedNode = node;
-				
-				pathFind();
-				
-				_shipLayout.addEventListener(Event.ENTER_FRAME, moveCrew, false, 0, true);
-				_selectedCrewMember.crewLayout.addEventListener(Event.ENTER_FRAME, moveCrew);
-			}
-		}
-		
-		public function clearNodes():void {
-			for (var i:Number = 0; i < _nodes.length; i++) {
-				_nodes[i].clearNode();
-			}
-		}
-		
-		
-		public function get shipCrew():Vector.<ICrew> {
-			return _crew;
-		}
-		
+		//{ Node init
 		protected function constructNodes():void { };
-		protected function constructCrew():void { };
+		
+		protected function generateNode(x:Number, y:Number) {
+			var node:Node = new Node();
+			node.ID = _nodeIndex;
+			node.X = x;
+			node.Y = y;
+			_nodeIndex += 1;
+			return node;
+		}
+		
+		protected function addNode(node:Node):void {
+			_nodes.push(node);
+			
+			_shipLayout.addChild(node.layout);
+			node.layout.x = (node.X * 34) + _offsetMapX;
+			node.layout.y = (node.Y * 34) + _offsetMapY;
+			node.layout.name = node.ID.toString();
+			node.layout.addEventListener(MouseEvent.RIGHT_CLICK, handleNodeRightClick);
+		}
 		
 		protected function initNodes():void {
 			//opimisation?
@@ -285,10 +229,25 @@ package Ship {
 				node.checkForDeadEnds();
 			}
 			
-			
-			
 			trace(_nodes);
 			testNodeOut(_nodes[7]);
+		}
+		//}
+		
+		//{ Debug
+		public function tracePath():void {
+			var testNode:Node = _selectedNode;
+			var traceLog:String = "";
+			
+			
+			while (testNode.parentNode != null) {
+				traceLog = "tracePath : ID = " + testNode.ID + " (x=" + testNode.X + ",y=" + testNode.Y + ")\n" + traceLog;
+				testNode = testNode.parentNode;
+			}
+			
+			traceLog = "tracePath : ID = " + testNode.ID + " (x=" + testNode.X + ",y=" + testNode.Y + ")\n" + traceLog; 
+			
+			trace(traceLog);
 		}
 		
 		public function testNodeOut(node:Node):void {
@@ -305,30 +264,56 @@ package Ship {
 			trace("");
 		}
 		
-		public function generateNode(x:Number, y:Number) {
-			var node:Node = new Node();
-			node.ID = _nodeIndex;
-			node.X = x;
-			node.Y = y;
-			_nodeIndex += 1;
-			return node;
+		public function runVeryLong():void {
+			var x:int = 0;
+			
+			for (var i:int = 0; i < 100000000; i++) {
+					x += 1;
+			}
 		}
+		//}
 		
-		public function tracePath():void {
-			var testNode:Node = _selectedNode;
-			var traceLog:String = "";
-			
-			
-			while (testNode.parentNode != null) {
-				traceLog = "tracePath : ID = " + testNode.ID + " (x=" + testNode.X + ",y=" + testNode.Y + ")\n" + traceLog;
-				testNode = testNode.parentNode;
+		//{ Event handlers
+		public function handleCrewClick(e:MouseEvent):void {
+			//deselect crew
+			for (var i:int = 0; i < _selectedCrewMembers.length; i++) {
+				_selectedCrewMembers[i].deselectMember();
 			}
 			
-			traceLog = "tracePath : ID = " + testNode.ID + " (x=" + testNode.X + ",y=" + testNode.Y + ")\n" + traceLog; 
+			var crewLayout:MovieClip = e.currentTarget as MovieClip;
+			var crewMember:ICrew = _crew[Number(crewLayout.name)];
 			
-			trace(traceLog);
+			crewMember.selectMember();
+			_selectedCrewMembers.push(crewMember);
+			
+			trace(crewLayout.name);
+			
+			
+			//var crewID:Number = Number((e.currentTarget as MovieClip).name);
+			//var crew:ICrew = _crew[crewID];
+			
+			trace(crewLayout);
+		}
+
+		private function handleEnterFrame(e:Event) {
+			for (var i:int = 0; i < _queueMovement.length; i++) {
+				//logic for switching between types
+				var movement:Movement = _queueMovement[i];
+				var point:Point = new Point((movement.toNode.X * 34) + _offsetMapX + _offsetCrewX, (movement.toNode.Y * 34) + _offsetMapY + _offsetCrewY);
+				
+				//(_nodes[nodeIndex].X * 34) + _offsetMapX + _offsetCrewX
+				//trace(point.x + " = " + point.y);
+				
+				moveToPoint(movement.crewMember.crewLayout, point, 2, true);
+			}
 		}
 		
+		private function handleRemoved(e:Event) {
+			dispose();
+		}
+		//}
+		
+		//{ Pathfinding
 		public function pathFind():void { 
 			trace("");
 			trace("=======================================");
@@ -337,32 +322,21 @@ package Ship {
 			var startNode:Node = _selectedCrewMember.node;
 			var stopNode:Node = _selectedNode;
 			var currentNode:Node = startNode;
-
-			
 			
 			//new
 			_openNodes = new Vector.<Node>;
 			_openNodes.push(startNode);
 			_startNode = startNode;
 			_stopNode = stopNode;
+			
 			pathFindOpenNodes();
 			
 			//add currentNode to openNodes
 			
-			
-			
-			
-			
-			
-			
-			
-			//DEZE REGEL UNCOMMENTEN OM PATHFINDING TE HERSTELLEN!!!!
-			//var x:Node = currentNode.pathFind(startNode, stopNode);
-			
 			startNode.parentNode = null;
 			
 			tracePath();
-			
+
 			for (var i:Number = 0; i < _nodes.length; i++) {
 				_nodes[i].clearNode();
 			}
@@ -382,14 +356,14 @@ package Ship {
 					attachedNode = openNode.x_ConnectedWalkableNodes[j];
 					
 					if (attachedNode == _stopNode) {
-						trace('attachedNode == stopNode');
+						//trace('attachedNode == stopNode');
 						attachedNode.parentNode = openNode;
 						foundStopNode = true;
 						break;
 					} else if (attachedNode.isDeadEnd) {
-						trace('attachedNode.isDeadEnd');
+						//trace('attachedNode.isDeadEnd');
 					} else if (attachedNode.parentNode != null) {
-						trace('attachedNode.parentNode != null');
+						//trace('attachedNode.parentNode != null');
 					} else {
 						attachedNodes.push(attachedNode);
 						attachedNode.parentNode = openNode;
@@ -406,97 +380,48 @@ package Ship {
 			if (foundStopNode == false) {
 				pathFindOpenNodes();
 			}
-		}
-		
-		
-		/*
-		public function pathFindOLD():void {
-			var nodePaths:Vector.<Node> = new Vector.<Node>();
-			var nodes:Vector.<Node> = new Vector.<Node>();
-			
-			nodes.push(_selectedCrewMember.node);
-			_selectedNode.setConnectedToTargetFlags();
-			pathFinderOLD(nodes, nodePaths);
-			
-			var lowestParentNodeCount:Number = 10000;
-			var lowestParentNodeCountID:Number = -1;
-			
-			for (var i:Number = 0; i < nodePaths.length; i++) {
-				trace("nodePaths " + i + " : parentNodeCount = " + nodePaths[i].parentNodeCount);
+		}		
+		//}
 
-				if (nodePaths[i].parentNodeCount < lowestParentNodeCount) {
-					lowestParentNodeCount = nodePaths[i].parentNodeCount;
-					lowestParentNodeCountID = i;
-				}
-			}
-			
-			if (lowestParentNodeCountID > -1) {
-				_selectedNode.parentNode = nodePaths[lowestParentNodeCountID];
-			}
-			
-			tracePath();
-			clearNodes();
+		private function moveCrew(e:Event):void {
+			trace(this);
 		}
-		*/
 		
-		/*
-		public function pathFinderOLD(nodes:Vector.<Node>, nodePaths:Vector.<Node>):void {
-			for (var i:Number = 0; i < nodes.length; i++) {
-				var node:Node = nodes[i];
-				trace("");
-				trace("PATHFIND-Pathfind ID = " + node.ID + " (" + i + ") (nodes.length == " + nodes.length + ")");
-				
-				
-				if (node.ID == 15) {
-					trace("yeah baby");
-				}
-				
-				var foundEndNode:Object = new Object();
-				foundEndNode.found = false;
-				
-				var connectedNodes:Vector.<Node> = node.traverseConnectedNodes(_selectedCrewMember.node, _selectedNode, foundEndNode);
-				
-				if (foundEndNode.found == true) {
-					trace("found end node");
-					nodePaths.push(node);
-					//node.clearCheckMarks();
-					_selectedNode.isChecked = false;
-					continue;
-				} else {
-					
-					if ((connectedNodes == null) || (connectedNodes.length == 0)) {
-						trace("connectedNodes == null || connectedNodes.length == 0");
-						
-						//mark the remaining nodes as open
-						
-						if (i < (nodes.length - 1)) {
-							for (var j:Number = i; j < nodes.length; j++) {
-								nodes[j].isChecked = false;
-							}
-							
-							node.isChecked = true;
-													
-							continue;
-						}
-						
-						
-						
-						//if there are no connected nodes... go back
-						if (i == (nodes.length)) {
-							trace("WARNING!!! no connected nodes found");
-							
-							while (connectedNodes.length == 0) {
-								node.uncheckParentChildNodes();
-								node.isChecked = true;
-								connectedNodes = node.parentNode.traverseConnectedNodes(_selectedCrewMember.node, _selectedNode, foundEndNode);
-							}
-						} 
-					}
-				}
-				
-				pathFinderOLD(connectedNodes, nodePaths);
+		public function clearNodes():void {
+			for (var i:Number = 0; i < _nodes.length; i++) {
+				_nodes[i].clearNode();
 			}
 		}
-		*/
+		
+		public function removeMomementById(id:int) {
+			for (var i:int = _queueMovement.length - 1; i >= 0; i--) {
+				if (_queueMovement[i].ID == id) {
+					trace("removing " + _queueMovement[i].ID);
+					_queueMovement.splice(i, 1);
+				}
+			}
+		}
+		
+		public function moveToPoint(obj:Object, target:Point, speed:Number = 1, objRot:Boolean = false):void {
+			// get the difference between obj and target points.
+			var diff:Point = target.subtract(new Point(obj.x, obj.y)); 
+			var dist = diff.length;
+			
+			// if we will go past when we move just put it in place.
+			if (dist <= speed) {
+				obj.x = target.x;
+				obj.y = target.y;
+			} else  { 
+			// If we are not there yet. Keep moving.	
+				diff.normalize(1);
+				obj.x += diff.x * speed;
+				obj.y += diff.y * speed;
+				
+				// If we want to rotate with our movement direction.
+				if (objRot)  { 
+					obj.rotation = Math.atan2(diff.y, diff.x) * (180 / Math.PI) + 90;
+				}
+			}
+		}
 	}
 }

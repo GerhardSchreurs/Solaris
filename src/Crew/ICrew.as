@@ -1,9 +1,10 @@
 package Crew {
 	import flash.display.MovieClip;
+	import flash.display.Sprite;
 	import flash.filters.*;
 	import Ship.Node;
 	
-	public class ICrew {
+	public class ICrew extends Sprite {
 		private var _ID:Number;
 		private var _crewName:String;
 		private var _crewLayout:MovieClip;
