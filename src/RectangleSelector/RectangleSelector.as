@@ -2,6 +2,7 @@ package RectangleSelector {
 	import flash.display.MovieClip;
 	import flash.display.Stage;
     import flash.events.MouseEvent;
+	import flash.geom.Point;
     import flash.geom.Rectangle;
     import flash.display.Sprite;
     import flash.events.Event;
@@ -15,8 +16,10 @@ package RectangleSelector {
         public var selectionSprite:Sprite; // Making a new Sprite to draw the rectangle.
         public var isMouseHeld:Boolean; // Will tell us whether the mouse button is Up/Down
 		
-		public function RectangleSelector() {
-			trace("I'm here");
+		private var _captureArea:Rectangle;
+		
+		public function RectangleSelector(captureArea:Rectangle) {
+			_captureArea = captureArea;
 			
 			if (stage) {
 				init();
@@ -44,8 +47,10 @@ package RectangleSelector {
 		}
 		
 		public function SetStartPoint( me:MouseEvent ):void {
-            selectionRect = new Rectangle( stage.mouseX, stage.mouseY ); // Creating the selection rectangle.
-            isMouseHeld = true; // The mouse is now held.
+			if (_captureArea.contains(stage.mouseX, stage.mouseY)) {
+				selectionRect = new Rectangle( stage.mouseX, stage.mouseY ); // Creating the selection rectangle.
+				isMouseHeld = true; // The mouse is now held.
+			}
         }
          
          

@@ -6,7 +6,11 @@ package {
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.geom.Rectangle;
 	import Ship.IShip;
+	import RectangleSelector.RectangleSelector;
+	import RectangleSelector.RectangleSelectionEvent;
+	import Ship.Torus;
 	
 	public class Hangar extends Sprite {
 		private var _fleetIndex:Number = 0;
@@ -14,6 +18,8 @@ package {
 		private var UI:LIB_Hangar;
 		private var _dialog:Dialog;
 		private var _shipCurrent:IShip;
+		
+		public var rectangleSelector:RectangleSelector;
 		
 		private function get nextShipIndex():Number {
 			if ((_fleetIndex + 1) < _fleet.length) {
@@ -33,7 +39,9 @@ package {
 		
 		public function Hangar():void  {
 			this.addEventListener(Event.REMOVED, handleRemoved, false, 0, true);
-
+			
+			rectangleSelector = new RectangleSelector(new Rectangle(200,50, 800, 575));
+			
 			trace('initHangar');
 			
 			UI = new LIB_Hangar();
@@ -44,11 +52,30 @@ package {
 			UI.btnNext.addEventListener(MouseEvent.CLICK, handleNextClick, false, 0, true);
 			UI.btnReturn.addEventListener(MouseEvent.CLICK, handleReturnClick, false, 0, true);
 			
-			_fleet.push(new Ship.Kestrel());
-			_fleet.push(new Ship.Torus());
-			_fleet.push(new Ship.Osprey());
+			var ship:IShip;
+
+			ship = new Ship.Kestrel();
+			ship.hangar = this;
+			_fleet.push(ship);
+
+			ship = new Ship.Torus();
+			ship.hangar = this;
+			_fleet.push(ship);
+			
+			ship = new Ship.Osprey();
+			ship.hangar = this;
+			_fleet.push(ship);
+
+			
+			/*
+			_fleet.push(new Ship.Kestrel(this));
+			_fleet.push(new Ship.Torus(this));
+			_fleet.push(new Ship.Osprey(this));
+			*/
 			
 			setUI();
+			
+			addChild(rectangleSelector);
 		}
 		
 		function clearUI():void {

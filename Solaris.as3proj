@@ -5,7 +5,7 @@
     <movie outputType="Application" />
     <movie input="" />
     <movie path="bin\Solaris.swf" />
-    <movie fps="30" />
+    <movie fps="24" />
     <movie width="1200" />
     <movie height="675" />
     <movie version="16" />

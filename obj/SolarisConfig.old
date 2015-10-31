@@ -16,7 +16,7 @@
     </define>
     <define append="true">
       <name>CONFIG::timeStamp</name>
-      <value>'10/16/2015'</value>
+      <value>'10/31/2015'</value>
     </define>
     <define append="true">
       <name>CONFIG::air</name>
@@ -43,7 +43,7 @@
     <path-element>C:\Solaris\src\Main.as</path-element>
   </file-specs>
   <default-background-color>#FFFFFF</default-background-color>
-  <default-frame-rate>30</default-frame-rate>
+  <default-frame-rate>24</default-frame-rate>
   <default-size>
     <width>1200</width>
     <height>675</height>

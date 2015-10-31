@@ -1,6 +1,9 @@
 package Ship {
 	import flash.display.MovieClip;
 	import flash.display3D.textures.VideoTexture;
+	import flash.events.Event;
+	import flash.events.MouseEvent;
+	import flash.geom.ColorTransform;
 	import flash.geom.Point;
 	import flash.media.AVSource;
 	import flash.text.TextColorType;
@@ -11,7 +14,7 @@ package Ship {
 	public class Node {
 		//new
 		public var x_ConnectedWalkableNodes:Vector.<Node>;
-		
+		public var room:Room;
 		
 		public var ID:Number;
 		private var _parentNode:Node;
@@ -65,6 +68,8 @@ package Ship {
 		public var G:Number;
 		public var H:Number;
 		
+		private var colorOn:ColorTransform = new ColorTransform();
+		private var colorOff:ColorTransform = new ColorTransform();
 		
 		public function set parentNode(value:Node):void  {
 			this._parentNode = value;
@@ -531,6 +536,10 @@ package Ship {
 			
 			return connectedNodes;
 		}
+		
+		public function getNeighbourNodes():Vector.<Node> {
+			return room.nodes;
+		}
 			
 		public function getConnectedTestNodes(t:Node, fromNode:Node, toNode:Node):Array {
 			var connectedTestNodes:Array = new Array();
@@ -727,6 +736,9 @@ package Ship {
 			layout = new LIB_Node();
 			x_ConnectedWalkableNodes = new Vector.<Node>;
 			
+			colorOff.color = 0xE6E2DB;
+			colorOn.color = 0xCEC7BB;
+			
 			_singleConnectedNode = null;
 			_connectedNodesCount = 0;
 			_connectedWalkableNodesCount = 0;
@@ -752,6 +764,25 @@ package Ship {
 			layout.fldF.mouseEnabled = false;
 			//layout.fldG.mouseEnabled = false;
 			//layout.fldH.mouseEnabled = false;
+			
+			this.layout.addEventListener(MouseEvent.MOUSE_OVER, handleMouseOver);
+			this.layout.addEventListener(MouseEvent.MOUSE_OUT, handleMouseOut);
+		}
+		
+		private function handleMouseOver(e:MouseEvent):void {
+			room.highLightOn();
+		}
+		
+		private function handleMouseOut(e:MouseEvent):void {
+			room.highLightOff();
+		}
+		
+		public function highLightOn():void {
+			layout.square.transform.colorTransform = colorOn;
+		}
+		
+		public function highLightOff():void {
+			layout.square.transform.colorTransform = colorOff;
 		}
 		
 		public function showPoint ():void {
