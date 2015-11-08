@@ -10,8 +10,25 @@ package Ship {
 	import Ship.Enum.Compas;
 	import Ship.Enum.Navigation;
 	import Ship.Enum.Thickness;
+	import State.*;
 	
 	public class Node {
+		//for moving
+		public var xPos:int;
+		public var yPos:int;
+		public var xPosStop:int;
+		public var yPosStop:int;
+		public var xCenterPosition:int;
+		public var yCenterPosition:int;
+		public var centerBoundL:Number;
+		public var centerBoundR:Number;
+		public var centerBoundT:Number;
+		public var centerBoundB:Number;
+		public var outsideBoundL:Number;
+		public var outsideBoundR:Number;
+		public var outsideBoundT:Number;
+		public var outsideBoundB:Number;
+		
 		//new
 		public var x_ConnectedWalkableNodes:Vector.<Node>;
 		public var room:Room;
@@ -215,6 +232,11 @@ package Ship {
 		public function get connectedDoorsCount() {
 			return _connectedDoorsCount;
 		}
+		
+		public function init():void {
+			checkForDeadEnds();
+			calculateBounds();
+		}
 
 		public function checkForDeadEnds():void {
 			if (this.x_ConnectedWalkableNodes.length == 1) {
@@ -228,6 +250,32 @@ package Ship {
 					this.layout.fldID.textColor = 0xFF0000;
 				}
 			}
+		}
+		
+		public function isInCenterBounds(x:Number, y:Number):Boolean {
+			return (x >= centerBoundL && x <= centerBoundR && y >= centerBoundT && y <= centerBoundB);
+		}
+		
+		public function isInOutBounds(x:Number, y:Number):Boolean {
+			return (x >= outsideBoundL && x <= outsideBoundR && y >= outsideBoundT && y <= outsideBoundB);
+		}
+		
+		
+		public function calculateBounds():void {
+			xPos = this.layout.x;
+			yPos = this.layout.y;
+			xPosStop = xPos + DEFAULTS.NodeSize;
+			yPosStop = yPos + DEFAULTS.NodeSize;
+			xCenterPosition = xPos + DEFAULTS.CrewOffset;
+			yCenterPosition = yPos + DEFAULTS.CrewOffset;
+			centerBoundL = xCenterPosition - DEFAULTS.CrewSpeedDiagonalModifier;
+			centerBoundR = xCenterPosition + DEFAULTS.CrewSpeedDiagonalModifier;
+			centerBoundT = yCenterPosition - DEFAULTS.CrewSpeedDiagonalModifier;
+			centerBoundB = yCenterPosition + DEFAULTS.CrewSpeedDiagonalModifier;
+			outsideBoundL = xPos + DEFAULTS.CrewSpeedDiagonalModifier;
+			outsideBoundR = xPosStop - DEFAULTS.CrewSpeedDiagonalModifier;
+			outsideBoundT = yPos + DEFAULTS.CrewSpeedDiagonalModifier;
+			outsideBoundB = yPosStop - DEFAULTS.CrewSpeedDiagonalModifier;
 		}
 			
 		public function get TOPLnode():Node {

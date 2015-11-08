@@ -10,7 +10,7 @@
 		public function Kestrel() {
 			shipName = "The Wolfgang";
 			shipLayout = new LIB_Kestrel();
-			mapOffsetX = 30;
+			mapOffsetX = 32;
 			mapOffsetY = 66;
 			
 			constructNodes();
@@ -24,7 +24,7 @@
 			
 			member = new Gerhard();
 			member.nodes = nodes;
-			addCrew(member, 3);
+			addCrew(member, 47);
 			
 			member = new Wolfgang();
 			member.nodes = nodes;

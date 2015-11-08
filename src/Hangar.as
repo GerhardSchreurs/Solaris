@@ -1,5 +1,6 @@
 package {
 	import Crew.ICrew;
+	import Debug.FPSCounter;
 	import Dialog.Dialog;
 	import flash.accessibility.ISearchableText;
 	import flash.display.MovieClip;
@@ -76,6 +77,9 @@ package {
 			setUI();
 			
 			addChild(rectangleSelector);
+			
+			var fpsCounter:FPSCounter = new FPSCounter();
+			addChild(fpsCounter);
 		}
 		
 		function clearUI():void {
@@ -88,8 +92,8 @@ package {
 			UI.txtName.text = _shipCurrent.shipName;
 			addChild(_shipCurrent.shipLayout);
 			
-			_shipCurrent.shipLayout.x = 310;
-			_shipCurrent.shipLayout.y = 150;
+			_shipCurrent.shipLayout.x = 306;
+			_shipCurrent.shipLayout.y = 144;
 			
 			fillCrew();
 		}

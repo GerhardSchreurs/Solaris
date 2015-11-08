@@ -12,6 +12,7 @@ package Ship {
 	import Ship.Events.PathFindEvent;
 	import flash.display.Sprite;
     import flash.geom.Point;
+	import State.*;
 	//}  
 	
 	//should be treated as an abstract class
@@ -30,8 +31,6 @@ package Ship {
 		private var _roomIndex:Number = 0;
 		private var _offsetMapX:Number;
 		private var _offsetMapY:Number;
-		private const _offsetCrewX:Number = 17;
-		private const _offsetCrewY:Number = 17;
 		private var _selectedCrewMembers:Vector.<ICrew>;
 		private var _selectedNodes:Vector.<Node>;
 		private var _selectedNode:Node;
@@ -115,8 +114,8 @@ package Ship {
 			
 			var crewLayout:MovieClip = crew.crewLayout;
 			crewLayout.name = _crewIndex.toString();
-			crewLayout.x = (_nodes[nodeIndex].X * 34) + _offsetMapX + _offsetCrewX;
-			crewLayout.y = (_nodes[nodeIndex].Y * 34) + _offsetMapY + _offsetCrewY;
+			crewLayout.x = (_nodes[nodeIndex].X * DEFAULTS.NodeSize) + _offsetMapX + DEFAULTS.CrewOffset;
+			crewLayout.y = (_nodes[nodeIndex].Y * DEFAULTS.NodeSize) + _offsetMapY + DEFAULTS.CrewOffset;
 			crewLayout.addEventListener(MouseEvent.CLICK, handleCrewClick);
 			//TODO: do not forget to removeListener
 			
@@ -138,7 +137,7 @@ package Ship {
 			return node;
 		}
 		
-		protected function generateRoom() {
+		protected function generateRoom():void {
 			var room:Room = new Room();
 			room.ID = _roomIndex;
 			_rooms.push(room); 
@@ -150,8 +149,8 @@ package Ship {
 			_rooms[_rooms.length - 1].addNode(node);
 			node.room = _rooms[_rooms.length - 1];
 			_shipLayout.addChild(node.layout);
-			node.layout.x = (node.X * 34) + _offsetMapX;
-			node.layout.y = (node.Y * 34) + _offsetMapY;
+			node.layout.x = (node.X * DEFAULTS.NodeSize) + _offsetMapX;
+			node.layout.y = (node.Y * DEFAULTS.NodeSize) + _offsetMapY;
 			node.layout.name = node.ID.toString();
 			node.layout.addEventListener(MouseEvent.RIGHT_CLICK, handleNodeRightClick);
 		}
@@ -259,7 +258,7 @@ package Ship {
 			//Check for dead ends
 			for (var i:Number = 0; i < _nodes.length; i++) {
 				var node:Node = _nodes[i];
-				node.checkForDeadEnds();
+				node.init();
 			}
 			
 			testNodeOut(_nodes[2]);
@@ -372,13 +371,22 @@ package Ship {
 			_selectedCrewMembers = _crew.filter(filterSelectedCrewMembers);
 			
 			if (_selectedCrewMembers.length > 0) {
-				var clickedNode:Node = _nodes[Number(MovieClip(e.target).parent.name)];
+				var targetNode:String = MovieClip(e.target).parent.name;
+				
+				if (isNaN(Number(targetNode))) {
+					//sometimes, something like instance144 for whatever reason
+					trace("4:targetNode NaN");
+					return;
+				}
+				
+				var clickedNode:Node = _nodes[Number(targetNode)];
 				
 				if (_selectedCrewMembers.length == 1) {
 					_selectedNodes.push(clickedNode);
 					clickedNode.showPoint();
 					
-					_selectedCrewMembers[0].path = pathFind(_selectedCrewMembers[0].node, clickedNode);
+					//_selectedCrewMembers[0].path = pathFind(_selectedCrewMembers[0].node, clickedNode);
+					_selectedCrewMembers[0].movePath = pathFind(_selectedCrewMembers[0].node, clickedNode);
 				} else {
 					//now, since we have multiple selected crewmembers, we need to get all nodes that are neighbour of clickedNode
 					var neighbourNodes:Vector.<Node> = clickedNode.getNeighbourNodes();
@@ -387,7 +395,8 @@ package Ship {
 						if ((i < neighbourNodes.length) && (neighbourNodes[i] != undefined)) {
 							neighbourNodes[i].showPoint();
 							_selectedNodes.push(neighbourNodes[i]);
-							_selectedCrewMembers[i].path = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
+							//_selectedCrewMembers[i].path = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
+							_selectedCrewMembers[i].movePath = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
 						} else {
 							//_selectedCrewMembers[i].deselectMember();
 						}
@@ -411,8 +420,8 @@ package Ship {
 			
 				for (var i:int = 0; i < _crew.length; i ++) {
 					var crewMember:ICrew = _crew[i];
-					crewMember.doStuff();
-					
+					//crewMember.doStuff();
+					crewMember.enterFrame();
 					
 					if (crewMember.path != null) {
 						//trace("crewMember.ID = " + crewMember.ID + " (" + crewMember.crewName + "). CurrentNode ID = " + crewMember.node.ID);
