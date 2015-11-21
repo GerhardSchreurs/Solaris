@@ -401,32 +401,19 @@ package Ship {
 		private function handleEnterFrame(e:Event):void {
 			var testing:Boolean = true;
 			
-			
-				for (var i:int = 0; i < _crew.length; i ++) {
-					var crewMember:ICrew = _crew[i];
-					//crewMember.doStuff();
-					crewMember.enterFrame();
+			for (var i:int = 0; i < _crew.length; i ++) {
+				var crewMember:ICrew = _crew[i];
+				//crewMember.doStuff();
+				crewMember.enterFrame();
+				
+				if (crewMember.path != null) {
+					//trace("crewMember.ID = " + crewMember.ID + " (" + crewMember.crewName + "). CurrentNode ID = " + crewMember.node.ID);
+					//trace("crewMember.path = " + crewMember.path[0].ID);
+					//trace("");
 					
-					if (crewMember.path != null) {
-						//trace("crewMember.ID = " + crewMember.ID + " (" + crewMember.crewName + "). CurrentNode ID = " + crewMember.node.ID);
-						//trace("crewMember.path = " + crewMember.path[0].ID);
-						//trace("");
-						
-						testing = false;
-					}
+					testing = false;
 				}
-			/*
-			for (var i:int = 0; i < _queueMovement.length; i++) {
-				//logic for switching between types
-				var movement:Movement = _queueMovement[i];
-				var point:Point = new Point((movement.toNode.X * 34) + _offsetMapX + _offsetCrewX, (movement.toNode.Y * 34) + _offsetMapY + _offsetCrewY);
-				
-				//(_nodes[nodeIndex].X * 34) + _offsetMapX + _offsetCrewX
-				//trace(point.x + " = " + point.y);
-				
-				moveToPoint(movement.crewMember.crewLayout, point, 2, true);
 			}
-			*/
 		}
 
 		
@@ -477,8 +464,8 @@ package Ship {
 				openNode = openNodes[i];
 				
 				//loop through all attached nodes in openNode
-				for (var j:int = 0; j < openNode.x_ConnectedWalkableNodes.length; j++) {
-					attachedNode = openNode.x_ConnectedWalkableNodes[j];
+				for (var j:int = 0; j < openNode.connectedWalkableNodes.length; j++) {
+					attachedNode = openNode.connectedWalkableNodes[j];
 					
 					if (attachedNode == stopNode) {
 						//trace('attachedNode == stopNode');
@@ -546,8 +533,8 @@ package Ship {
 				openNode = _openNodes[i];
 				
 				//loop through all attached nodes in openNode
-				for (var j:int = 0; j < openNode.x_ConnectedWalkableNodes.length; j++) {
-					attachedNode = openNode.x_ConnectedWalkableNodes[j];
+				for (var j:int = 0; j < openNode.connectedWalkableNodes.length; j++) {
+					attachedNode = openNode.connectedWalkableNodes[j];
 					
 					if (attachedNode == _stopNode) {
 						//trace('attachedNode == stopNode');
