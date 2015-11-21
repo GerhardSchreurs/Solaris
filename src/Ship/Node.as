@@ -11,8 +11,12 @@ package Ship {
 	import Ship.Enum.Navigation;
 	import Ship.Enum.Thickness;
 	import State.*;
-	
+	import flash.filters.*;
+
 	public class Node {
+		//debug
+		public var a:String;
+		
 		//for moving
 		public var xPos:int;
 		public var yPos:int;
@@ -44,7 +48,7 @@ package Ship {
 		public var doorT:Boolean;
 		public var doorR:Boolean;
 		public var doorB:Boolean;
-
+		
 		public var borderL:Number;
 		public var borderT:Number;
 		public var borderR:Number;
@@ -87,6 +91,8 @@ package Ship {
 		
 		private var colorOn:ColorTransform = new ColorTransform();
 		private var colorOff:ColorTransform = new ColorTransform();
+		private var _doorGlowFilter:GlowFilter;
+
 		
 		public function set parentNode(value:Node):void  {
 			this._parentNode = value;
@@ -235,21 +241,61 @@ package Ship {
 		
 		public function init():void {
 			checkForDeadEnds();
+			removeDoubleDoors();
 			calculateBounds();
 		}
+		
+		private function removeDoorBottom():void {
+			layout.doorB.removeEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+			layout.doorB.removeEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+			layout.doorB.removeEventListener(MouseEvent.CLICK, handleDoorClick);
+			
+			layout.removeChild(layout.doorB);
+ 		}
+		
+		private function removeDoorRight():void {
+			layout.doorR.removeEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+			layout.doorR.removeEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+			layout.doorR.removeEventListener(MouseEvent.CLICK, handleDoorClick);
+			
+			layout.removeChild(layout.doorR);
+		}
+		
+		
+		public function removeDoubleDoors():void {
+			if (doorT && (_TOPCnode != undefined)) {
+				if (_TOPCnode.doorB) {
+					//remove target doorB
+					_TOPCnode.removeDoorBottom();
+				}
+			}
+			
+			if (doorL && (_MIDLnode != undefined)) {
+				if (_MIDLnode.doorR) {
+					//remove target doorR
+					_MIDLnode.removeDoorRight();
+				}
+			}
+		}
+		
 
 		public function checkForDeadEnds():void {
 			if (this.x_ConnectedWalkableNodes.length == 1) {
 				this.isDeadEnd = true;
-				//this.layout.fldID.text += "X";
 				this.layout.fldID.textColor = 0xFF0000;
 			} else if (this.x_ConnectedWalkableNodes.length == 3) {
 				if (this._connectedDoorsCount == 0) {
 					this.isDeadEnd = true;
-					//this.layout.fldID.text += "X";
 					this.layout.fldID.textColor = 0xFF0000;
 				}
 			}
+		}
+		
+		public function xIsInCenterBounds(x:Number) {
+			return (x >= centerBoundL && x <= centerBoundR);
+		}
+		public function yIsInCenterBounds(y:Number) {
+			return (y >= centerBoundT && y <= centerBoundB);
 		}
 		
 		public function isInCenterBounds(x:Number, y:Number):Boolean {
@@ -268,14 +314,14 @@ package Ship {
 			yPosStop = yPos + DEFAULTS.NodeSize;
 			xCenterPosition = xPos + DEFAULTS.CrewOffset;
 			yCenterPosition = yPos + DEFAULTS.CrewOffset;
-			centerBoundL = xCenterPosition - DEFAULTS.CrewSpeedDiagonalModifier;
-			centerBoundR = xCenterPosition + DEFAULTS.CrewSpeedDiagonalModifier;
-			centerBoundT = yCenterPosition - DEFAULTS.CrewSpeedDiagonalModifier;
-			centerBoundB = yCenterPosition + DEFAULTS.CrewSpeedDiagonalModifier;
-			outsideBoundL = xPos + DEFAULTS.CrewSpeedDiagonalModifier;
-			outsideBoundR = xPosStop - DEFAULTS.CrewSpeedDiagonalModifier;
-			outsideBoundT = yPos + DEFAULTS.CrewSpeedDiagonalModifier;
-			outsideBoundB = yPosStop - DEFAULTS.CrewSpeedDiagonalModifier;
+			centerBoundL = xCenterPosition - DEFAULTS.NodeBoundsRange;
+			centerBoundR = xCenterPosition + DEFAULTS.NodeBoundsRange;
+			centerBoundT = yCenterPosition - DEFAULTS.NodeBoundsRange;
+			centerBoundB = yCenterPosition + DEFAULTS.NodeBoundsRange;
+			outsideBoundL = xPos + DEFAULTS.NodeBoundsRange;
+			outsideBoundR = xPosStop - DEFAULTS.NodeBoundsRange;
+			outsideBoundT = yPos + DEFAULTS.NodeBoundsRange;
+			outsideBoundB = yPosStop - DEFAULTS.NodeBoundsRange;
 		}
 			
 		public function get TOPLnode():Node {
@@ -783,6 +829,7 @@ package Ship {
 		public function Node() {
 			layout = new LIB_Node();
 			x_ConnectedWalkableNodes = new Vector.<Node>;
+			_doorGlowFilter = new GlowFilter();
 			
 			colorOff.color = 0xE6E2DB;
 			colorOn.color = 0xCEC7BB;
@@ -815,6 +862,7 @@ package Ship {
 			
 			this.layout.addEventListener(MouseEvent.MOUSE_OVER, handleMouseOver);
 			this.layout.addEventListener(MouseEvent.MOUSE_OUT, handleMouseOut);
+			
 		}
 		
 		private function handleMouseOver(e:MouseEvent):void {
@@ -842,11 +890,13 @@ package Ship {
 		}
 		
 		public function setDoors(L:Boolean, T:Boolean, R:Boolean, B:Boolean):void {
+			var door:Door;
+			
 			layout.doorL.visible = L;
 			layout.doorT.visible = T;
 			layout.doorR.visible = R;
 			layout.doorB.visible = B;
-			
+
 			if (L == false && T == false && R == false && B == false) {
 				_connectedDoorsCount = 0;
 			} else if (L == true && T == true && R == true && B == true) {
@@ -859,7 +909,129 @@ package Ship {
 			doorT = T;
 			doorR = R;
 			doorB = B;
+			
+			if (L) {
+				door = layout.doorL as Door;
+				
+				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
+			}
+			if (T) {
+				door = layout.doorT as Door;
+				
+				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
+			}
+			if (R) {
+				door = layout.doorR as Door;
+				
+				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
+			}
+			if (B) {
+				door = layout.doorB as Door;
+				
+				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
+			}
 		}
+		
+		private function handleDoorMouseOver(e:MouseEvent):void {
+			if (e.target.parent is LIB_Node) {
+				(e.target).filters = [_doorGlowFilter];
+			} else {
+				(e.target.parent as MovieClip).filters = [_doorGlowFilter];
+			}
+			
+		}
+		private function handleDoorMouseOut(e:MouseEvent):void {
+			if (e.target.parent is LIB_Node) {
+				(e.target).filters = [];
+			} else {
+				(e.target.parent as MovieClip).filters = [];
+			}
+		}
+		
+		public function openDoorT():void {
+			if (layout.doorT != undefined && !(layout.doorT.currentFrame > 1 && layout.doorT.currentFrame < 10)) {
+				openDoor(layout.doorT as Door);
+			}
+		}
+		
+		public function openDoorL():void {
+			if (layout.doorL != undefined && !(layout.doorL.currentFrame > 1 && layout.doorL.currentFrame < 10)) {
+				openDoor(layout.doorL as Door);
+			}
+		}
+		
+		public function openDoorB():void {
+			if (layout.doorB != undefined && !(layout.doorB.currentFrame > 1 && layout.doorB.currentFrame < 10)) {
+				openDoor(layout.doorB as Door);
+			}
+		}
+		
+		private function openDoor(door:Door):void {
+			door.gotoAndPlay(2);
+		}
+		
+		public function closeDoors():void {
+			if ((doorL) && (layout.doorL.currentFrame == 10)) {
+				layout.doorL.gotoAndPlay(11);
+			}
+			if ((doorT) && (layout.doorT.currentFrame == 10)) {
+				layout.doorT.gotoAndPlay(11);
+			}
+			if ((doorR) && (layout.doorR.currentFrame == 10)) {
+				layout.doorR.gotoAndPlay(11);
+			}
+			if ((doorB) && (layout.doorB.currentFrame == 10)) {
+				layout.doorB.gotoAndPlay(11);
+			}
+		}
+		
+		private function handleDoorClick(e:MouseEvent):void {
+			trace("handleDoorClick. e.target = " + e.target + " and e.target.parent = " + e.target.parent);
+			
+			var target:Door;
+			
+			if (e.target.parent is LIB_Door) {
+				target = e.target.parent as Door;
+			} else {
+				target = e.target as Door;
+			}
+			
+			target.filters = [];
+			
+			if (target.isPlaying == false) {
+				target.play();
+			} else {
+				var intPosition:int = target.currentFrame;
+				
+				intPosition += 15;
+				
+				if (intPosition > 30) {
+					intPosition = 30 - intPosition;
+				}
+				
+				target.gotoAndPlay(intPosition);
+				
+			}
+
+			//(e.target as MovieClip).gotoAndPlay(16);
+			/*
+			if (e.target.parent.isOpen) {
+				(e.target as MovieClip).gotoAndPlay(16);
+				e.target.isOpen = false;
+			} else {
+				(e.target.parent as MovieClip).play();
+				e.target.isOpen = true;
+			}
+			*/
+		}		
 		
 		public function setBorders(thicknessL:Number, thicknessT:Number, thicknessR:Number, thicknessB:Number):void {
 			setBorderL(thicknessL);

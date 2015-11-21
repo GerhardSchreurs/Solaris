@@ -155,113 +155,97 @@ package Ship {
 			node.layout.addEventListener(MouseEvent.RIGHT_CLICK, handleNodeRightClick);
 		}
 		
-		protected function initNodes():void {
-			//opimisation?
-			//instead of looping again, maybe add to stage while doing addNode?
-			//Some of this code should be added to Node itself
-			
-			var currentX:Number = 0;
-			var currentY:Number = -1;
-			
-			var nodeArray:Array = new Array();
-			
+		protected function initNodeArray(nodeArray:Array):void {
 			for each (var node:Node in _nodes) {
-				/*
-				if (node.Y != currentY) {
-					currentY = node.Y;
-					nodeArray[node.Y] = new Array();
-				}
-				*/
-				
 				if (nodeArray[node.Y] == undefined) {
 					nodeArray[node.Y] = new Array()
 				}
-				
 				nodeArray[node.Y][node.X] = node;
 			}
+		}
+		
+		protected function initNodeNeighbours(nodeArray:Array, node:Node):void {
+			var testX:Number;
+			var testY:Number;
 			
-			for (var i:Number = 0; i < _nodes.length; i++) {
-				var node:Node = _nodes[i];
-				
-				if (node.ID == 2) {
-					trace("yes");
-				}
-				
-				
-				node.layout.fldID.text = node.ID.toString();
-				var testX:Number;
-				var testY:Number;
-				
-				//TOP
-				testY = node.Y - 1;
-				
-				if (testY >= 0) {
-					//TOP L
-					testX = node.X - 1;
-					
-					if (testX >= 0) {
-						node.TOPLnode = nodeArray[testY][testX];
-					}
-					
-					//TOP C
-					testX = node.X;
-					node.TOPCnode = nodeArray[testY][testX];
-					
-					//TOP R
-					testX = node.X + 1;
-					
-					if (testX < nodeArray[testY].length) {
-						node.TOPRnode = nodeArray[testY][testX];
-					}
-				}
-				
-				//MID
-				testY = node.Y;
-				
-				//MID L
+			//TOP
+			testY = node.Y - 1;
+			
+			if (testY >= 0) {
+				//TOP L
 				testX = node.X - 1;
 				
 				if (testX >= 0) {
-					node.MIDLnode = nodeArray[testY][testX];
+					node.TOPLnode = nodeArray[testY][testX];
 				}
 				
-				//MID R
+				//TOP C
+				testX = node.X;
+				node.TOPCnode = nodeArray[testY][testX];
+				
+				//TOP R
 				testX = node.X + 1;
 				
 				if (testX < nodeArray[testY].length) {
-					node.MIDRnode = nodeArray[testY][testX];
+					node.TOPRnode = nodeArray[testY][testX];
 				}
-				
-				//BOT
-				testY = node.Y + 1;
-				
-				if (testY < nodeArray.length) {
-					//BOT L
-					testX = node.X - 1;
-					
-					if (testX >= 0) {
-						node.BOTLnode = nodeArray[testY][testX];
-					}
-					
-					//BOT C
-					testX = node.X;
-					node.BOTCnode = nodeArray[testY][testX];
-					
-					//BOT R
-					testX = node.X + 1;
-					if (testX < nodeArray[testY].length) {
-						node.BOTRnode = nodeArray[testY][testX];
-					}
-				}		
 			}
 			
-			//Check for dead ends
+			//MID
+			testY = node.Y;
+			
+			//MID L
+			testX = node.X - 1;
+			
+			if (testX >= 0) {
+				node.MIDLnode = nodeArray[testY][testX];
+			}
+			
+			//MID R
+			testX = node.X + 1;
+			
+			if (testX < nodeArray[testY].length) {
+				node.MIDRnode = nodeArray[testY][testX];
+			}
+			
+			//BOT
+			testY = node.Y + 1;
+			
+			if (testY < nodeArray.length) {
+				//BOT L
+				testX = node.X - 1;
+				
+				if (testX >= 0) {
+					node.BOTLnode = nodeArray[testY][testX];
+				}
+				
+				//BOT C
+				testX = node.X;
+				node.BOTCnode = nodeArray[testY][testX];
+				
+				//BOT R
+				testX = node.X + 1;
+				if (testX < nodeArray[testY].length) {
+					node.BOTRnode = nodeArray[testY][testX];
+				}
+			}		
+		}
+		
+		protected function initNodes():void {
+			var nodeArray:Array = new Array();
+			var currentX:Number = 0;
+			var currentY:Number = -1;
+			
+			initNodeArray(nodeArray);
+			
 			for (var i:Number = 0; i < _nodes.length; i++) {
 				var node:Node = _nodes[i];
+				node.layout.fldID.text = node.ID.toString();
+				initNodeNeighbours(nodeArray, node);
 				node.init();
 			}
 			
-			testNodeOut(_nodes[2]);
+			//testNodeOut(_nodes[2]);
 		}
 		//}
 		

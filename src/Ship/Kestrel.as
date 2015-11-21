@@ -1,6 +1,5 @@
 ﻿package Ship {
 	import Crew.ICrew;
-
 	import Crew.Gerhard;
 	import Crew.Sergay;
 	import Crew.Wolfgang;
@@ -16,23 +15,6 @@
 			constructNodes();
 			constructCrew();
 			initNodes();
-		}
-		
-		override protected function constructCrew():void {
-			trace("constructCrew");
-			var member:ICrew;
-			
-			member = new Gerhard();
-			member.nodes = nodes;
-			addCrew(member, 47);
-			
-			member = new Wolfgang();
-			member.nodes = nodes;
-			addCrew(member, 15);
-
-			member = new Sergay();
-			member.nodes = nodes;
-			addCrew(member, 22);
 		}
 		
 		override protected function constructNodes():void {
@@ -116,18 +98,6 @@
 			node.setBorders(1,2,2,3);
 			node.setDoors(false, false, false, true);
 			addNode(node);
-
-			generateRoom();
-			
-			node = generateNode(3, 4);
-			node.setBorders(3,2,1,2);
-			node.setDoors(true, false, false, false);
-			addNode(node);
-
-			node = generateNode(4, 4);
-			node.setBorders(1,3,2,2);
-			node.setDoors(false, true, false, false);
-			addNode(node);
 			
 			generateRoom();
 
@@ -149,7 +119,19 @@
 			node = generateNode(5, 3);
 			node.setBorders(1,1,3,2);
 			node.setDoors(false, false, true, false);
-			addNode(node);			
+			addNode(node);	
+
+			generateRoom();
+			
+			node = generateNode(3, 4);
+			node.setBorders(3,2,1,2);
+			node.setDoors(true, false, false, false);
+			addNode(node);
+
+			node = generateNode(4, 4);
+			node.setBorders(1,3,2,2);
+			node.setDoors(false, true, false, false);
+			addNode(node);
 			
 			generateRoom();
 
@@ -318,6 +300,23 @@
 			node.setBorders(3,1,2,2);
 			node.setDoors(true, false, false, false);
 			addNode(node);
+		}
+	
+		override protected function constructCrew():void {
+			trace("constructCrew");
+			var member:ICrew;
+			
+			member = new Gerhard();
+			member.nodes = nodes;
+			addCrew(member, 47);
+			
+			member = new Wolfgang();
+			member.nodes = nodes;
+			addCrew(member, 15);
+
+			member = new Sergay();
+			member.nodes = nodes;
+			addCrew(member, 22);
 		}
 	}
 }

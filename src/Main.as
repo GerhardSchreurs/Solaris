@@ -27,9 +27,9 @@ package {
 			var objSound:LIB_Music_track1  = new LIB_Music_track1();
 			//objSound.play();
 		  
-			initMenu();
+			//initMenu();
 		  
-			//initHangar();
+			initHangar();
 			/*
 			var objShip:Ship = new Ship;
 			trace(objShip.nameOfShip);

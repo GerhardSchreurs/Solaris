@@ -2,6 +2,7 @@ package Crew {
 	import Direction.*;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
+	import flash.events.AVDictionaryDataEvent;
 	import flash.filters.*;
 	import Ship.Node;
 	import Ship.NodeOLD;
@@ -14,13 +15,15 @@ package Crew {
 		private var _crewPortrait:MovieClip;
 		private var _glowFilter:GlowFilter;
 		private var _node:Node;
+		private var _lastDoorNode:Node;
 		private var _path:Vector.<Node>;
 		private var _pathOld:Vector.<Node>;
 		private var _pathIndex:int;
 		private var _pathIndexOld:int;
 		private var _pathHasChanged:Boolean;
-		private var _nodes:Vector.<Node>
-		
+		private var _nodes:Vector.<Node>;
+		private var _faceDirection:IDirection;
+ 		
 		private var _moveX:int;
 		private var _moveY:int;
 		
@@ -35,6 +38,17 @@ package Crew {
 		
 		
 		/******************************************************************/
+		
+		public function set moveDirection(direction:IDirection):void {
+			_moveDirection = direction;
+			faceDirection = direction;
+		}
+		
+		public function set faceDirection(direction:IDirection):void {
+			_faceDirection = direction;
+			crewLayout.rotation = _faceDirection.r;
+		}
+		
 		
 		function addLeadingZero(val:Number, places:int):String {
 			var result:String = val.toString();
@@ -83,10 +97,18 @@ package Crew {
 			moveLoop();
 		}
 		
-		public function resetMovePath():void {
-			_moveDirection = Directions.MIDCPOS;
+		public function resetPathData():void {
+			moveDirection = Directions.BOTCPOS;
+			closeLastDoor();
+			closeFinishDoor();
+			_lastDoorNode = null;
 			_movePath = null;
 			_movePathIndex = 0;
+		}
+		
+		public function closeFinishDoor():void {
+			trace("DOOR closing " + getFinishMovePathNode().ID + " (finish)");
+			getFinishMovePathNode().closeDoors();
 		}
 		
 		public function getNextMovePathNode():Node {
@@ -97,49 +119,51 @@ package Crew {
 			}
 		}
 		
-		public function isInCenterBounds():void {
-			
+		public function getFinishMovePathNode():Node {
+			return (_movePath[_movePath.length - 1]);
 		}
+		
 		
 		public function walkToCenter():void {
 			//we go back to the center point of current node
 					
 			var crewX:int = crewLayout.x;
 			var crewY:int = crewLayout.y;
-			var centerX:int = node.layout.x + DEFAULTS.CrewOffset;
-			var centerY:int = node.layout.y + DEFAULTS.CrewOffset;
+			var centerX:int = node.xCenterPosition;
+			var centerY:int = node.yCenterPosition;
 			
 			var data:String = " (crewX = " + crewX + " crewY = " + crewY + " centerX = " + centerX + " centerY = " + centerY + ")";
 			
-			if (crewX == centerX && crewY == centerY) {
-				trace("walkToCenter() member is MIDC, do nothing" + data);
+			if (isCrewMemberInCenterBounds(node)) {
+				placeCrewInCenter(node);
+				printData("walkToCenter() member is MIDC, do nothing", node);
 				return;
 			} else if (crewX < centerX && crewY < centerY) {
-				trace("walkToCenter() member is TOPL positioned from center" + data);
-				_moveDirection = Directions.BOTRPOS;
-			} else if (crewX == centerX && crewY < centerY) {
-				trace("walkToCenter() member is TOPC positioned from center" + data);
-				_moveDirection = Directions.BOTCPOS;
+				printData("walkToCenter() member is TOPL positioned from center", node);
+				moveDirection = Directions.BOTRPOS;
+			} else if (node.xIsInCenterBounds(crewX) && crewY < centerY) {
+				printData("walkToCenter() member is TOPC positioned from center", node);
+				moveDirection = Directions.BOTCPOS;
 			} else if (crewX > centerX && crewY < centerY) {
-				trace("walkToCenter() member is TOPR positioned from center" + data);
-				_moveDirection = Directions.BOTLPOS;
-			} else if (crewX < centerX && crewY == centerY) {
-				trace("walkToCenter() member is MIDL positioned from center" + data);
-				_moveDirection = Directions.MIDRPOS;
-			} else if (crewX > centerX && crewY == centerY) {
-				trace("walkToCenter() member is MIDR positioned from center" + data);
-				_moveDirection = Directions.MIDLPOS;
+				printData("walkToCenter() member is TOPR positioned from center", node);
+				moveDirection = Directions.BOTLPOS;
+			} else if (crewX < centerX && node.yIsInCenterBounds(crewY)) {
+				printData("walkToCenter() member is MIDL positioned from center", node);
+				moveDirection = Directions.MIDRPOS;
+			} else if (crewX > centerX && node.yIsInCenterBounds(crewY)) {
+				printData("walkToCenter() member is MIDR positioned from center", node);
+				moveDirection = Directions.MIDLPOS;
 			} else if (crewX < centerX && crewY > centerY) {
-				trace("walkToCenter() member is BOTL positioned from center" + data);
-				_moveDirection = Directions.TOPRPOS;
-			} else if (crewX == centerX && crewY > centerY) {
-				trace("walkToCenter() member is BOTC positioned from center" + data);
-				_moveDirection = Directions.TOPCPOS;
+				printData("walkToCenter() member is BOTL positioned from center", node);
+				moveDirection = Directions.TOPRPOS;
+			} else if (node.xIsInCenterBounds(crewX) && crewY > centerY) {
+				printData("walkToCenter() member is BOTC positioned from center", node);
+				moveDirection = Directions.TOPCPOS;
 			} else if (crewX > centerX && crewY > centerY) {
-				trace("walkToCenter() member is BOTR positioned from center" + data);
-				_moveDirection = Directions.TOPLPOS;
+				printData("walkToCenter() member is BOTR positioned from center", node);
+				moveDirection = Directions.TOPLPOS;
 			} else {
-				trace("3:walkToCenter() huh?!");
+				printData("3:walkToCenter() huh?!", node);
 			}			
 		}
 		
@@ -190,75 +214,87 @@ package Crew {
 			_movePathChanged = false;
 		}
 		
+		var printDebug = false;
+		
+		public function closeLastDoor():void {
+			if (_lastDoorNode != null) {
+				if (_lastDoorNode.connectedDoorsCount > 0) {
+					trace("DOOR closing " + _lastDoorNode.ID);
+					_lastDoorNode.closeDoors();
+				}
+			}
+		}
+		
 		public function moveLoop():void {
 			if (_movePath == null) {
 				return;
 			}
 			
-			
-			trace("LASTNODE is in center : " + _movePath[_movePath.length - 1].isInCenterBounds(crewLayout.x, crewLayout.y));
-			
-			if (isCrewMemberInCenterOfNode(_movePath[_movePath.length - 1], false)) {
+			//CrewID=02 [xy=253,116] NodeID=02 [X=236 - 236.75 || 252.25 - 253 - 253.75 || 269.25 - 270] [Y=100 - 100.75 || 116.25 - 117 - 117.75 || 133.25 - 134] 
+
+			if (isCrewMemberInCenterBounds(_movePath[_movePath.length - 1])) {
 				trace("moveLoop() finished!!! in node: " + node.ID);
+				
 				//this is the last node of the current path. We are finished
-				resetMovePath();
+				placeCrewInCenter(_movePath[_movePath.length - 1]);
+				resetPathData();
 				return;
 			}
+			
 			
 			var currentNode:Node = node;
 			var nextNode:Node = getNextMovePathNode();
 			
-			printData("TEST()", currentNode); 
-			trace("NODE " + node.ID + " is in center : " + node.isInCenterBounds(crewLayout.x, crewLayout.y));
-			
-			if (isCrewMemberInCenterOfNode(node, true)) {
+			if (isCrewMemberInCenterBounds(node)) {
 				trace("moveLoop() we are centered in node : " + node.ID);
-				_moveDirection = Directions.MIDCPOS;
+				placeCrewInCenter(node);
+				moveDirection = Directions.MIDCPOS;
 			}
 			
 			if (_moveDirection == Directions.MIDCPOS) {
 				trace("moveLoop() calculating");
+				closeLastDoor();
 				
+				//topL
 				if (nextNode == currentNode.TOPLnode) {
 					trace("moveLoop() moving TOPL from " + currentNode.ID + " to " + currentNode.TOPLnode.ID);
-					_moveY = _speedModifierNegative;
-					_moveX = _speedModifierNegative;
-					_moveDirection = Directions.TOPLPOS;
+					moveDirection = Directions.TOPLPOS;
+				//topC
 				} else if (nextNode == currentNode.TOPCnode) {
 					trace("moveLoop() moving TOPC from " + currentNode.ID + " to " + currentNode.TOPCnode.ID);
-					_moveY = _speedModifierNegative;
-					_moveX = 0;
-					_moveDirection = Directions.TOPCPOS;
+					currentNode.openDoorT();
+					_lastDoorNode = currentNode;
+					moveDirection = Directions.TOPCPOS;
+				//topR
 				} else if (nextNode == currentNode.TOPRnode) {
 					trace("moveLoop() moving TOPR from " + currentNode.ID + " to " + currentNode.TOPRnode.ID);
-					_moveY = _speedModifierNegative;
-					_moveX = _speedModifierPositive;
-					_moveDirection = Directions.TOPRPOS;
+					moveDirection = Directions.TOPRPOS;
+				//midL
 				} else if (nextNode == currentNode.MIDLnode) {
 					trace("moveLoop() moving MIDL from " + currentNode.ID + " to " + currentNode.MIDLnode.ID);
-					_moveY = 0;
-					_moveX = _speedModifierNegative;
-					_moveDirection = Directions.MIDLPOS;
+					currentNode.openDoorL();
+					_lastDoorNode = currentNode;
+					moveDirection = Directions.MIDLPOS;
+				//midR
 				} else if (nextNode == currentNode.MIDRnode) {
 					trace("moveLoop() moving MIDR from " + currentNode.ID + " to " + currentNode.MIDRnode.ID);
-					_moveY = 0;
-					_moveX = _speedModifierPositive;
-					_moveDirection = Directions.MIDRPOS;
+					nextNode.openDoorL();
+					_lastDoorNode = nextNode;
+					moveDirection = Directions.MIDRPOS;
+				//botL
 				} else if (nextNode == currentNode.BOTLnode) {
 					trace("moveLoop() moving BOTL from " + currentNode.ID + " to " + currentNode.BOTLnode.ID);
-					_moveY = _speedModifierPositive;
-					_moveX = _speedModifierNegative;
-					_moveDirection = Directions.BOTLPOS;
+					moveDirection = Directions.BOTLPOS;
+				//botC
 				} else if (nextNode == currentNode.BOTCnode) {
 					trace("moveLoop() moving BOTC from " + currentNode.ID + " to " + currentNode.BOTCnode.ID);
-					_moveY = _speedModifierPositive;
-					_moveX = 0;
-					_moveDirection = Directions.BOTCPOS;
+					nextNode.openDoorT();
+					_lastDoorNode = nextNode;
+					moveDirection = Directions.BOTCPOS;
+				//botR
 				} else if (nextNode == currentNode.BOTRnode) {
 					trace("moveLoop() moving BOTR from " + currentNode.ID + " to " + currentNode.BOTRnode.ID);
-					_moveY = _speedModifierPositive;
-					_moveX = _speedModifierPositive;
-					_moveDirection = Directions.BOTRPOS;
+					moveDirection = Directions.BOTRPOS;
 				} else if (nextNode == currentNode) {
 					trace("3: moveLoop() nextNode == currentNode")
 					_moveX = 0;
@@ -282,7 +318,9 @@ package Crew {
 			if (nextNode != null) {
 				if (isCrewMemberInBoundariesOfNode(nextNode)) {
 					trace("moveLoop() crewMember is node " + node.ID + " and In Boundaries Of Next Node " + nextNode.ID);
-					trace("moveLoop() (crewX = " + crewLayout.x + " crewY = " + crewLayout.y + " centerX = " + (node.layout.x + DEFAULTS.CrewOffset) + " centerY = " + (node.layout.y + DEFAULTS.CrewOffset));
+					
+
+					//trace("moveLoop() (crewX = " + crewLayout.x + " crewY = " + crewLayout.y + " centerX = " + (node.layout.x + DEFAULTS.CrewOffset) + " centerY = " + (node.layout.y + DEFAULTS.CrewOffset));
 					//trace("crewMember is in boundaries of next node. Changing node");
 					//trace("currentNode = " + node.ID + ", next node = " + nextNode.ID);
 					//traceOutput(null);
@@ -323,6 +361,15 @@ package Crew {
 			} else {
 				return false;
 			}
+		}
+		
+		public function placeCrewInCenter(node:Node) {
+			crewLayout.x = node.xPos + DEFAULTS.CrewOffset;
+			crewLayout.y = node.yPos + DEFAULTS.CrewOffset;
+		}
+		
+		public function isCrewMemberInCenterBounds(node:Node) {
+			return node.isInCenterBounds(_crewLayout.x, _crewLayout.y);
 		}
 		
 		public function isCrewMemberInCenterOfNode(node:Node, traceDebug:Boolean):Boolean {
@@ -906,8 +953,8 @@ package Crew {
 		}
 		
 		public function ICrew() {
-			var speedX:Number = 2;
-			var speedY:Number = 2;
+			var speedX:Number = DEFAULTS.CrewSpeed;
+			var speedY:Number = DEFAULTS.CrewSpeed;
 			
 			Directions.TOPLPOS.x = 0 - speedX;
 			Directions.TOPLPOS.y = 0 - speedY;
@@ -928,7 +975,6 @@ package Crew {
 			Directions.BOTRPOS.x = speedX;
 			Directions.BOTRPOS.y = speedY;
 			
-			/*
 			Directions.TOPLPOS.x = (Directions.TOPLPOS.x * .75);
 			Directions.TOPLPOS.y = (Directions.TOPLPOS.y * .75);
 			Directions.TOPRPOS.x = (Directions.TOPRPOS.x * .75);
@@ -937,7 +983,6 @@ package Crew {
 			Directions.BOTLPOS.y = (Directions.BOTLPOS.y * .75);
 			Directions.BOTRPOS.x = (Directions.BOTRPOS.x * .75);
 			Directions.BOTRPOS.y = (Directions.BOTRPOS.y * .75);
-			*/
 			
 			_moveDirection = Directions.MIDCPOS;
 			_glowFilter = new GlowFilter();
@@ -973,6 +1018,7 @@ package Crew {
 		
 		public function set crewLayout(value:MovieClip):void {
 			this._crewLayout = value;
+			faceDirection = Directions.BOTCPOS;
 		}
 		
 		public function get crewPortrait():MovieClip {
