@@ -1,15 +1,25 @@
 package {
 	import Dialog.Dialog;
+	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.MouseEvent;
+	import flash.geom.Rectangle;
 	import Ship.Node;
+	import State.GameData;
+	import Game.Game;
 	
 	[Frame(factoryClass="Preloader")]
 	
 	public class Main extends Sprite {
+		public var gameData:GameData = GameData.getInstance();
+		private var _hangar:Hangar;
+		private var _menu:Menu;
+		private var _game:Game;
+		
+		
 		public function Main():void {
 		  if (stage) {
 			  init();
@@ -20,16 +30,28 @@ package {
 
 		private function init(e:Event = null):void {
 			removeEventListener(Event.ADDED_TO_STAGE, init);
-
-			stage.scaleMode = StageScaleMode.SHOW_ALL;
-			stage.addEventListener(MouseEvent.RIGHT_CLICK, function(e:Event) { } );
 			
-			var objSound:LIB_Music_track1  = new LIB_Music_track1();
+			stage.scaleMode = StageScaleMode.SHOW_ALL;
+			stage.addEventListener(MouseEvent.RIGHT_CLICK, function(e:Event):void { } );
+			
+			//var objSound:LIB_Music_track1  = new LIB_Music_track1();
 			//objSound.play();
 		  
-			//initMenu();
+			
+			initMenu();
+			
+			/*
+			var njaa:MovieClip = new MovieClip();
+			njaa.addChild(new LIB_Kestrel());
+			njaa.scrollRect = new Rectangle(100, 100, 200, 200);
+			addChild(njaa);
+			*/
+			
+			
+			
 		  
-			initHangar();
+			
+			//initHangar();
 			/*
 			var objShip:Ship = new Ship;
 			trace(objShip.nameOfShip);
@@ -37,65 +59,48 @@ package {
 			var objSystem:SupportSystem = new SupportSystem(1);
 			*/
 		}
-
-		public function initMenu() {
-			var objMenu:Menu = new Menu();
-			objMenu.name = 'objMenu';
-			addChild(objMenu);
+		
+		public function initGame():void {
+			cleanUp();
 			
+			trace("4:initGame called!!!");
+			
+			
+			_game = new Game();
+			addChild(_game);
+		}
+
+		public function initMenu():void {
+			cleanUp();
+
+			_menu = new Menu();
+			_menu.name = 'objMenu';
+			addChild(_menu);
 		}
 
 		public function initHangar():void {
 			cleanUp();
 			
-			var objHangar:Hangar = new Hangar();
-			objHangar.name = 'objHangar';
-			addChild(objHangar);
+			_hangar = new Hangar(this);
+			_hangar.name = 'objHangar';
+			addChild(_hangar);
 		}
+		
+		private function cleanUp():void {
+			if (_menu != null) {
+				trace("Main.cleanUp : removing menu!");
 
-		function cleanUp():void {
-			if (getChildByName('objMenu') != undefined) {
-				removeChild(getChildByName('objMenu'));
+				removeChild(_menu);
+				_menu.dispose();
+				_menu = null;
+			}
+			
+			if (_hangar != null) {
+				trace("Main.cleanUp : removing hangar!");
+				removeChild(_hangar);
+				_hangar.dispose();
+				_hangar = null;
 			}
 		}
-
-
-		function destroyHome() {
-			var objButton:LIB_Menu_button;
-	  
-			for (var i:int = this.numChildren - 1; i >= 0; i--) {
-				if (this.getChildAt(i) is LIB_Menu_button) {
-					//objButton = Menu_button(this.getChildAt(i));
-					//this.removeChild(objButton);
-					this.removeChildAt(i);
-				} else {
-					trace(this.getChildAt(i).name);
-				}
-			}
-
-			/*
-			for ( var i:int = 0; i < this.numChildren; i++) {
-			if ( stage.getChildAt(i) is Menu_button) {
-			trace("found");
-			}
-			}
-			*/
-		}
-
-		/*
-		function initHangar():void {
-		  trace('initHangar');
-		  //removeChild(getChildByName('backgroundMenu'));
-		  
-		  var objBackgroundMenu = getChildByName('backgroundMenu');
-		  var intIndex:int = objBackgroundMenu.parent.getChildIndex(objBackgroundMenu);
-		  removeChild(objBackgroundMenu);
-		  
-		  var objBackground:Hangar_background = new Hangar_background();
-		  objBackground.name = 'backgroundHangar';
-		  addChild(objBackground);
-		  setChildIndex(objBackground, intIndex);
-		}
-		*/
 	}
 }

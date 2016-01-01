@@ -7,10 +7,21 @@
 	
 	public class Kestrel extends IShip {
 		public function Kestrel() {
-			shipName = "The Wolfgang";
+			shipName = "The Kestrel";
 			shipLayout = new LIB_Kestrel();
 			mapOffsetX = 32;
 			mapOffsetY = 66;
+			
+			_statHealthMax = 30;
+			_statHealthNow = 30;
+			_statOxygenMax = 100;
+			_statOxygenNow = 100;
+			_statShieldMax = 4;
+			_statShieldNow = 1;
+			
+			
+			
+			
 			
 			constructNodes();
 			constructCrew();
@@ -18,7 +29,7 @@
 		}
 		
 		override protected function constructNodes():void {
-			trace("constructNodes");
+			trace("constructNodes Kestrel");
 
 			super.constructNodes();
 			
@@ -307,16 +318,41 @@
 			var member:ICrew;
 			
 			member = new Gerhard();
-			member.nodes = nodes;
-			addCrew(member, 47);
+			member.map = nodes;
+			addCrew(member, 20);
 			
 			member = new Wolfgang();
-			member.nodes = nodes;
-			addCrew(member, 15);
+			member.map = nodes;
+			addCrew(member, 21);
 
 			member = new Sergay();
-			member.nodes = nodes;
+			member.map = nodes;
 			addCrew(member, 22);
+			
+			member = new Gerhard();
+			member.map = nodes;
+			addCrew(member, 5);
+			
+			member = new Wolfgang();
+			member.map = nodes;
+			addCrew(member, 5);
+
+			member = new Sergay();
+			member.map = nodes;
+			addCrew(member, 7);
+
+			member = new Gerhard();
+			member.map = nodes;
+			addCrew(member, 9);
+			
+			member = new Wolfgang();
+			member.map = nodes;
+			addCrew(member, 12);
+
+			member = new Sergay();
+			member.map = nodes;
+			addCrew(member, 15);
+
 		}
 	}
 }

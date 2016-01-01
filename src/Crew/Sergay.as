@@ -1,9 +1,11 @@
 package Crew {
 	public class Sergay extends ICrew {
 		public function Sergay() {
-			this.crewName = "Sergay";
-			this.crewLayout = new LIB_Crew_Sergay();
-			this.crewPortrait = new LIB_Crew_Sergay();
+			crewName = "Sergay";
+			crewLayout = new LIB_Crew_Sergay();
+			crewPortrait = new LIB_Crew_Sergay();
+			
+			speed = 3;
 		}
 	}
 }

@@ -5,6 +5,9 @@ package Direction {
 			x = 6;
 			y = 0;
 			r = 90;
+			
+			yFixed = true;
+			isDiagonal = false;
 		}
 	}
 }

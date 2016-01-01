@@ -11,6 +11,13 @@ package Ship {
 			mapOffsetX = 45;
 			mapOffsetY = 32;
 			
+			_statHealthMax = 30;
+			_statHealthNow = 30;
+			_statOxygenMax = 100;
+			_statOxygenNow = 100;
+			_statShieldMax = 4;
+			_statShieldNow = 1;
+
 			constructNodes();
 			constructCrew();
 			initNodes();
@@ -20,7 +27,7 @@ package Ship {
 			var member:ICrew;
 			
 			member = new Gerhard();
-			member.nodes = nodes;
+			member.map = nodes;
 			addCrew(member, 0);
 		}
 		

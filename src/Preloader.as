@@ -52,7 +52,7 @@ package
            bar.graphics.beginFill(0x8888ff);
            bar.graphics.drawRect(1, 1, (e.bytesLoaded / e.bytesTotal) * 98 , 4);
            bar.graphics.endFill();
-           trace( "loading:" + (e.bytesLoaded / e.bytesTotal) * 100 );
+           //trace( "loading:" + (e.bytesLoaded / e.bytesTotal) * 100 );
 		 }
 		
 		private function checkFrame(e:Event):void 

@@ -1,11 +1,9 @@
 package Ship {
 	import flash.display.MovieClip;
-	import flash.display3D.textures.VideoTexture;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.ColorTransform;
 	import flash.geom.Point;
-	import flash.media.AVSource;
 	import flash.text.TextColorType;
 	import Ship.Enum.Compas;
 	import Ship.Enum.Navigation;
@@ -13,7 +11,7 @@ package Ship {
 	import State.*;
 	import flash.filters.*;
 
-	public class Node {
+	public class Node implements IDisposable {
 		//for moving
 		public var xPos:int;
 		public var yPos:int;
@@ -30,9 +28,12 @@ package Ship {
 		public var outsideBoundT:Number;
 		public var outsideBoundB:Number;
 		
+		public var isOuterNode:Boolean;
+		
 		//new
 		public var connectedWalkableNodes:Vector.<Node>;
 		public var room:Room;
+		public var ship:IShip;
 		
 		public var ID:Number;
 		private var _parentNode:Node;
@@ -77,18 +78,13 @@ package Ship {
 
 		private var _parentNodeCount:int = 0;
 
-		public var isChecked:Boolean;
-		public var isNextChecked:Boolean;
 		public var isDeadEnd:Boolean;
-		public var isConnectedToTarget:Boolean;
 
-		public var F:Number;
-		public var G:Number;
-		public var H:Number;
-		
 		private var colorOn:ColorTransform = new ColorTransform();
 		private var colorOff:ColorTransform = new ColorTransform();
 		private var _doorGlowFilter:GlowFilter;
+		
+		private var _isDisposed:Boolean;
 		
 		public function Node() {
 			layout = new LIB_Node();
@@ -124,13 +120,14 @@ package Ship {
 			//layout.fldG.mouseEnabled = false;
 			//layout.fldH.mouseEnabled = false;
 			
-			this.layout.addEventListener(MouseEvent.MOUSE_OVER, handleMouseOver);
-			this.layout.addEventListener(MouseEvent.MOUSE_OUT, handleMouseOut);
+			//highlighting
+			//this.layout.addEventListener(MouseEvent.MOUSE_OVER, handleMouseOver);
+			//this.layout.addEventListener(MouseEvent.MOUSE_OUT, handleMouseOut);
 		}
 		
 		public function init():void {
 			checkForDeadEnds();
-			removeDoubleDoors();
+			initDoors();
 			calculateBounds();
 		}
 
@@ -386,7 +383,26 @@ package Ship {
 			layout.removeChild(layout.doorR);
 		}
 		
-		public function removeDoubleDoors():void {
+		///<b>WARNING!!!</b> Call only for dispose!
+		private function removeDoorLeft():void {
+			layout.doorL.removeEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+			layout.doorL.removeEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+			layout.doorL.removeEventListener(MouseEvent.CLICK, handleDoorClick);
+			
+			layout.removeChild(layout.doorL);
+		}
+		
+		///<b>WARNING!!!</b> Call only for dispose!
+		private function removeDoorTop():void {
+			layout.doorT.removeEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
+			layout.doorT.removeEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
+			layout.doorT.removeEventListener(MouseEvent.CLICK, handleDoorClick);
+			
+			layout.removeChild(layout.doorT);
+		}
+		
+		public function initDoors():void {
+			//Remove Double Doors
 			if (doorT && (_TOPCnode != undefined)) {
 				if (_TOPCnode.doorB) {
 					//remove target doorB
@@ -399,6 +415,21 @@ package Ship {
 					//remove target doorR
 					_MIDLnode.removeDoorRight();
 				}
+			}
+			
+			//Set outerDoor flags
+			if (doorL && !_canMIDL) {
+				layout.doorL.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (doorT && !_canTOPC) {
+				layout.doorT.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (doorR && !_canMIDR) {
+				layout.doorR.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (doorB && !_canBOTC) {
+				layout.doorB.isOuterDoor = true;
+				isOuterNode = true;
 			}
 		}	
 		
@@ -454,44 +485,114 @@ package Ship {
 		}
 		
 		private function handleDoorMouseOver(e:MouseEvent):void {
+			//trace("I'm mouseover too!");
+			
+			/*
 			if (e.target.parent is LIB_Node) {
 				(e.target).filters = [_doorGlowFilter];
 			} else {
 				(e.target.parent as MovieClip).filters = [_doorGlowFilter];
 			}
+			*/
 			
 		}
 		private function handleDoorMouseOut(e:MouseEvent):void {
+			/*
 			if (e.target.parent is LIB_Node) {
 				(e.target).filters = [];
 			} else {
 				(e.target.parent as MovieClip).filters = [];
 			}
+			*/
+		}
+		
+		private function registerOpenDoor(door:Door) {
+			door.registerOpen();
+		}
+		
+		public function registerOpenDoorL():void {
+			if (layout.doorL != undefined) {
+				registerOpenDoor(layout.doorL as Door);
+			}
+		}
+		
+		public function registerOpenDoorT():void {
+			if (layout.doorT != undefined) {
+				registerOpenDoor(layout.doorT as Door);
+			}
 		}
 		
 		public function openDoorT():void {
+			if (layout.doorT != undefined) {
+				openDoor(layout.doorT as Door);
+			}
+			
+			
+			/*
 			if (layout.doorT != undefined && !(layout.doorT.currentFrame > 1 && layout.doorT.currentFrame < 10)) {
 				openDoor(layout.doorT as Door);
 			}
+			*/
 		}
 		
 		public function openDoorL():void {
+			if (layout.doorL != undefined) {
+				openDoor(layout.doorL as Door);
+			}
+			/*
 			if (layout.doorL != undefined && !(layout.doorL.currentFrame > 1 && layout.doorL.currentFrame < 10)) {
 				openDoor(layout.doorL as Door);
 			}
+			*/
 		}
 		
 		public function openDoorB():void {
+			if (layout.doorB != undefined) {
+				openDoor(layout.doorB as Door);
+			}
+			
+			/*
 			if (layout.doorB != undefined && !(layout.doorB.currentFrame > 1 && layout.doorB.currentFrame < 10)) {
 				openDoor(layout.doorB as Door);
 			}
+			*/
 		}
 		
 		private function openDoor(door:Door):void {
-			door.gotoAndPlay(2);
+			door.open();
+			//door.gotoAndPlay(2);
+		}
+		
+		public function resetDoors() {
+			if (doorL) {
+				layout.doorL.reset();
+			}
+			if (doorT) {
+				layout.doorT.reset();
+			}
+			if (doorR) {
+				layout.doorR.reset();
+			}
+			if (doorB) {
+				layout.doorB.reset();
+			}
 		}
 		
 		public function closeDoors():void {
+			if (doorL) {
+				layout.doorL.close();
+			}
+			if (doorT) {
+				layout.doorT.close();
+			}
+			if (doorR) {
+				layout.doorR.close();
+			}
+			if (doorB) {
+				layout.doorB.close();
+			}
+			
+			/*
 			if ((doorL) && (layout.doorL.currentFrame == 10)) {
 				layout.doorL.gotoAndPlay(11);
 			}
@@ -504,9 +605,11 @@ package Ship {
 			if ((doorB) && (layout.doorB.currentFrame == 10)) {
 				layout.doorB.gotoAndPlay(11);
 			}
+			*/
 		}
 		
 		private function handleDoorClick(e:MouseEvent):void {
+			return;
 			trace("handleDoorClick. e.target = " + e.target + " and e.target.parent = " + e.target.parent);
 			
 			var target:Door;
@@ -668,9 +771,6 @@ package Ship {
 		
 		public function clearNode():void {
 			this.parentNode = null;
-			this.isChecked = false;	
-			this.isNextChecked = false;
-			this.isConnectedToTarget = false;
 			_parentNodeCount = 0;
 			_connectedNodesCount = 0;
 			_connectedWalkableNodesCount = 0;
@@ -689,281 +789,75 @@ package Ship {
 			}
 		}
 		
-		public function getConnectedNodes(fromNode:Node, toNode:Node):Array {
-			var connectedNodes:Array = new Array();
-			var currentF:Number;
-			
-			if (canTOPL && (!TOPLnode.isChecked) && (!TOPLnode.isDeadEnd)) {
-				currentF = pathfindCalculate(TOPLnode, fromNode, toNode, 14);
-				connectedNodes.push(TOPLnode);
-			}
-			if (canTOPC && (!TOPCnode.isChecked) && (!TOPCnode.isDeadEnd)) {
-				currentF = pathfindCalculate(TOPCnode, fromNode, toNode, 10);
-				connectedNodes.push(TOPCnode);
-			}
-			if (canTOPR && (!TOPRnode.isChecked) && (!TOPRnode.isDeadEnd)) {
-				currentF = pathfindCalculate(TOPRnode, fromNode, toNode, 14);
-				connectedNodes.push(TOPRnode);
-			}
-			if (canMIDL && (!MIDLnode.isChecked) && (!MIDLnode.isDeadEnd)) {
-				currentF = pathfindCalculate(MIDLnode, fromNode, toNode, 10);
-				connectedNodes.push(MIDLnode);
-			}
-			if (canMIDR && (!MIDRnode.isChecked) && (!MIDRnode.isDeadEnd)) {
-				currentF = pathfindCalculate(MIDRnode, fromNode, toNode, 10);
-				connectedNodes.push(MIDRnode);
-			}
-			if (canBOTL && (!BOTLnode.isChecked) && (!BOTLnode.isDeadEnd)) {
-				currentF = pathfindCalculate(BOTLnode, fromNode, toNode, 14);
-				connectedNodes.push(BOTLnode);
-			}
-			if (canBOTC && (!BOTCnode.isChecked) && (!BOTCnode.isDeadEnd)) {
-				currentF = pathfindCalculate(BOTCnode, fromNode, toNode, 10);
-				connectedNodes.push(BOTCnode);
-			}
-			if (canBOTR && (!BOTRnode.isChecked) && (!BOTRnode.isDeadEnd)) {
-				currentF = pathfindCalculate(BOTRnode, fromNode, toNode, 14);
-				connectedNodes.push(BOTRnode);
-			}
-			
-			return connectedNodes;
-		}
-		
 		public function getNeighbourNodes():Vector.<Node> {
 			return room.nodes;
 		}
-			
-		public function getConnectedTestNodes(t:Node, fromNode:Node, toNode:Node):Array {
-			var connectedTestNodes:Array = new Array();
-			var currentF:Number;
-			
-			if (t.canTOPL && ((!t.TOPLnode.isChecked) && (!t.TOPLnode.isNextChecked) && (!t.TOPLnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.TOPLnode, fromNode, toNode, 14, true);
-				connectedTestNodes.push(t.TOPLnode);
-			}
-			if (t.canTOPC && ((!t.TOPCnode.isChecked) && (!t.TOPCnode.isNextChecked) && (!t.TOPCnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.TOPCnode, fromNode, toNode, 10, true);
-				connectedTestNodes.push(t.TOPCnode);
-			}
-			if (t.canTOPR && ((!t.TOPRnode.isChecked) && (!t.TOPRnode.isNextChecked) && (!t.TOPRnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.TOPRnode, fromNode, toNode, 14, true);
-				connectedTestNodes.push(t.TOPRnode);
-			}
-			if (t.canMIDL && ((!t.MIDLnode.isChecked) && (!t.MIDLnode.isNextChecked) && (!t.MIDLnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.MIDLnode, fromNode, toNode, 10, true);
-				connectedTestNodes.push(t.MIDLnode);
-			}
-			if (t.canMIDR && ((!t.MIDRnode.isChecked) && (!t.MIDRnode.isNextChecked) && (!t.MIDRnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.MIDRnode, fromNode, toNode, 10, true);
-				connectedTestNodes.push(t.MIDRnode);
-			}
-			if (t.canBOTL && ((!t.BOTLnode.isChecked) && (!t.BOTLnode.isNextChecked) && (!t.BOTLnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.BOTLnode, fromNode, toNode, 14, true);
-				connectedTestNodes.push(t.BOTLnode);
-			}
-			if (t.canBOTC && ((!t.BOTCnode.isChecked) && (!t.BOTCnode.isNextChecked) && (!t.BOTCnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.BOTCnode, fromNode, toNode, 10, true);
-				connectedTestNodes.push(t.BOTCnode);
-			}
-			if (t.canBOTR && ((!t.BOTRnode.isChecked) && (!t.BOTRnode.isNextChecked) && (!t.BOTRnode.isDeadEnd))) {
-				currentF = t.pathfindCalculate(t.BOTRnode, fromNode, toNode, 14, true);
-				connectedTestNodes.push(t.BOTRnode);
-			}
-			
-			return connectedTestNodes;
-		}
-			
-		public function sliceNodeArrayOnFScore(nodes:Array):Array {
-			var lowestFscore:Number = nodes[0].F;
-			
-			for (var i:Number = 0; i < nodes.length; i++) {
-				if (nodes[i].F > lowestFscore) {
-					nodes = nodes.slice(0, i);
-					break;
-				}
-			}
-			
-			return nodes;
-		}
-			
-		public function getLowestFscoreIndex(nodes:Array):Number {
-			var lowestFscore:Number = nodes[0].F;
-			var lowestFscoreIndex:Number = 0;
-			
-			if (nodes.length == 1) {
-				return lowestFscoreIndex;
-			} else {
-				if (nodes[1].F > lowestFscore) {
-					//only one attached node
-					return 0;
-				} else {
-					//multiple nodes attached, give up
-					return -1;
-				}
-			}
-		}
-		
-		public function findConnectedNode(fromNode:Node, toNode:Node):Node {
-			this.isChecked = true;
-			var connectedNodes:Array = getConnectedNodes(fromNode, toNode);
-				
-			if (connectedNodes.length == 0) {
-				trace("NO CONNECTED NODES");
-			} else if (connectedNodes.length == 1) {
-				trace("ONE CONNECTED NODE");
-				return connectedNodes[0];
-			} else { 
-				connectedNodes.sortOn("F", Array.NUMERIC);
-					
-				if (connectedNodes[0].F < connectedNodes[1].F) {
-					trace("MULTIPLE CONNECTED NODES, with single lowest F score");
-					return connectedNodes[0];
-				} else {
-					trace("MULTIPLE CONNECTED NODES, some have same F score (" + connectedNodes[0].F.toString() + ")");
-					connectedNodes = sliceNodeArrayOnFScore(connectedNodes);
-						
-					var testNodeScore:Vector.<Number> = new Vector.<Number>(connectedNodes.length);
-					var maxLength:Number = 3;
-					var innerCounter:Number = 0;
-					
-					for (var i:Number = 0; i < connectedNodes.length; i++) {
-						var testNode:Node = connectedNodes[i];
-						var testNodes:Array;
-							
-						for (var j:Number = 0; j < maxLength; j++) {
-							trace("pathing : " + testNode.ID + " (" + i.toString() + ")(" + j.toString() + ")");
-								
-							//we are going to try to test 3 connected testNodes;
-								
-							innerCounter = j;
-							testNodes = getConnectedTestNodes(testNode, fromNode, toNode);
-								
-							if (testNodes.length == 0) {
-								//No connected nodes, break;
-								testNodeScore[i] = 10000 + i;
-								break;
-							} else {
-								//found one or multiple connected nodes
-								testNodes.sortOn("F", Array.NUMERIC);
-								var lowestIndex:Number = getLowestFscoreIndex(testNodes);
-									
-								if (lowestIndex == -1) {
-									//found multiple nodes with same value, can't continue
-									maxLength = j;
-									testNodeScore[i] = testNodes[0].F;
-									break;
-								} else {
-									testNodeScore[i] = testNodes[lowestIndex].F;
-									testNode = testNodes[lowestIndex];
-								}
-							}
-								
-							if (testNode == toNode) {
-								break;
-							}
-						}
-					}
-						
-					//what is our lowestIndex?
-					var lowestIndex:Number = 0;
-					var lowestNumber:Number = testNodeScore[0];
-						
-					for (var i:Number = 1; i < testNodeScore.length; i++) {
-						if (testNodeScore[i] < lowestNumber) {
-							lowestNumber = testNodeScore[i];
-							lowestIndex = i;
-						}
-					}
-						
-					return connectedNodes[lowestIndex];
-				}
-			}
-				
-			return null;
-		}		
 		//}
 		
-		//{ PathFind IMPLEMENTATION
-		public function pathFind(fromNode:Node, toNode:Node):Node {
-			//Check all connected nodes
-			var fromNodeIsDeadEnd:Boolean = fromNode.isDeadEnd;
-			var toNodeIsDeadEnd:Boolean = toNode.isDeadEnd;
-			
-			fromNode.isDeadEnd = false;
-			toNode.isDeadEnd = false;
-			
-			var connectedNode:Node = fromNode;
-			var loopCounter:Number = 0;
-			
-			while (connectedNode != toNode) {
-				trace("pathFind ID = " + connectedNode.ID);
-				
-				loopCounter += 1;
-				
-				if (loopCounter == 100) {
-					break;
-				}
-				
-				connectedNode = connectedNode.findConnectedNode(fromNode, toNode);
-				trace("");
-			}
-			
-			fromNode.isDeadEnd = fromNodeIsDeadEnd;
-			toNode.isDeadEnd = toNodeIsDeadEnd;
-			
-			return connectedNode;
+		public function get isDisposed():Boolean {
+			return _isDisposed;
 		}
 		
-		public function pathfindCalculate(targetNode:Node, fromNode:Node, toNode:Node, gCost:Number, isNextCheckFlag:Boolean = false):Number {
-			targetNode.isChecked = (isNextCheckFlag == false);
-			targetNode.isNextChecked = isNextCheckFlag;
-			targetNode.parentNode = this;
-			targetNode.G = gCost;
-			targetNode.H = pathfindCalculateH(targetNode, toNode);
-			targetNode.F = targetNode.G + targetNode.H;
+		public function dispose():void {
+			//trace("Node.dispose(" + _isDisposed + ")");
+			if (_isDisposed) { return; }
 			
-			targetNode.layout.fldID.text = targetNode.ID.toString();
-			targetNode.layout.fldF.text = targetNode.F.toString();
-			//targetNode.layout.fldG.text = targetNode.G.toString();
-			//targetNode.layout.fldH.text = targetNode.H.toString();
-			
-			//targetNode.layout.fldID.text = "i";
-			
-			if (isNextCheckFlag) {
-				trace("pathfindCalculate ID = " + targetNode.ID + " parentID = " + targetNode.parentNode.ID + " (x=" + targetNode.X + ",y=" + targetNode.Y + ") f=" + targetNode.F + ",g=" + targetNode.G + ",h=" + targetNode.H + " " + isNextCheckFlag.toString()); 
-			} else {
-				trace("pathfindCalculate ID = " + targetNode.ID + " parentID = " + targetNode.parentNode.ID + " (x=" + targetNode.X + ",y=" + targetNode.Y + ") f=" + targetNode.F + ",g=" + targetNode.G + ",h=" + targetNode.H + " " + isNextCheckFlag.toString()); 
+			if (layout.doorL != null) {
+				if (layout.contains(layout.doorL)) {
+					removeDoorLeft();
+				}
+				
+				(layout.doorL as Door).dispose();
+				layout.doorL = null;
 			}
+			if (layout.doorR != null) {
+				if (layout.contains(layout.doorR)) {
+					removeDoorRight();
+				}
+				
+				(layout.doorR as Door).dispose();
+				layout.doorR = null;
+			}
+			if (layout.doorT != null) {
+				if (layout.contains(layout.doorT)) {
+					removeDoorTop();
+				}
+				
+				(layout.doorT as Door).dispose();
+				layout.doorT = null;
+			}
+			if (layout.doorB != null) {
+				if (layout.contains(layout.doorB)) {
+					removeDoorBottom();
+				}
+				
+				(layout.doorB as Door).dispose();
+				layout.doorB = null;
+			}	
 
-			return targetNode.F;
+
+			_parentNode = null;
+			_TOPLnode = null;
+			_TOPCnode = null;
+			_TOPRnode = null;
+			_MIDLnode = null;
+			_MIDRnode = null;
+			_BOTLnode = null;
+			_BOTCnode = null;
+			_BOTRnode = null;
+			_singleConnectedNode = null;
+
+			connectedWalkableNodes = null;
+			room = null;
+			ship = null;
+			
+			layout = null;
+
+			colorOn = null;
+			colorOff = null;
+			_doorGlowFilter = null;
+			
+			_isDisposed = true;
 		}
-		
-		public function pathfindCalculateNext(targetNode:Node, fromNode:Node, toNode:Node, gCost:Number):Number {
-			targetNode.isNextChecked = true;
-			targetNode.G = gCost;
-			targetNode.H = pathfindCalculateH(targetNode, toNode);
-			targetNode.F = targetNode.G + targetNode.H;
-			
-			return targetNode.F;
-		}
-		
-		public function pathfindCalculateH(fromNode:Node, toNode:Node):Number {
-			//((Math.abs(this.posX - nodeStop.posX)) + (Math.abs(this.posY - nodeStop.posY))) * 10
-			
-			
-			//Manhattan
-			return ((Math.abs(fromNode.X - toNode.X)) + (Math.abs(fromNode.Y - toNode.Y))) * 10;
-			
-			
-			//Manhattan 2
-			
-			/*
-			var XX:Number = (toNode.X + 5) - fromNode.X;
-			var YY:Number = toNode.Y - fromNode.Y;
-			return Math.sqrt(XX*XX + YY*YY);
-			return Math.sqrt(XX*XX + YY*YY);
-			*/
-		}
-		//}
 	}
 }

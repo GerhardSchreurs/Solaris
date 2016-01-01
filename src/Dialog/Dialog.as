@@ -6,19 +6,18 @@ package Dialog {
 	import flash.display.Stage;
 	import flash.events.EventDispatcher;
 	
-	public class Dialog extends Sprite {
-		var _dialog:LIB_Dialog
-		var _closeReference:Function;
-		var _cancelReference:Function;
-		var _okReference:Function;
-		var _btnClose:SimpleButton;
-		var _btnOk:LIB_Dialog_Button_Container;
-		var _btnCancel:LIB_Dialog_Button_Container;
-		var _stage:Stage;
+	public class Dialog extends Sprite implements IDisposable {
+		private var _dialog:LIB_Dialog
+		private var _closeReference:Function;
+		private var _cancelReference:Function;
+		private var _okReference:Function;
+		private var _btnClose:SimpleButton;
+		private var _btnOk:LIB_Dialog_Button_Container;
+		private var _btnCancel:LIB_Dialog_Button_Container;
+		private var _stage:Stage;
+		private var _isDisposed:Boolean;
 		
 		public function Dialog(stage:Stage, title:String, message:String, close:Function = null, cancel:Function = null, ok:Function = null):void {
-			trace("here");
-			
 			_dialog = new LIB_Dialog();
 			_stage = stage;
 			_okReference = ok;
@@ -32,6 +31,7 @@ package Dialog {
 				_btnOk.addEventListener(MouseEvent.CLICK, handleButtonOkClick, false, 0, true);
 				_btnOk.title.text = "OK";
 				_btnOk.title.mouseEnabled = false;
+				
 				_dialog.addChild(_btnOk);
 			}
 			if (cancel != null) {
@@ -45,10 +45,10 @@ package Dialog {
 			}
 			
 			if ((_btnOk != null) && (_btnCancel != null)) {
-				_btnCancel.x = 725;
+				_btnCancel.x = 600;
 				_btnCancel.y = 180;
 				
-				_btnOk.x = 600;
+				_btnOk.x = 725;
 				_btnOk.y = 180;
 			}
 			
@@ -88,7 +88,14 @@ package Dialog {
 			}
 		}
 		
+		public function get isDisposed():Boolean {
+			return _isDisposed;
+		}
+		
 		public function dispose():void {
+			trace("Dialog.dispose(" + _isDisposed + ")");
+			if (_isDisposed) {  return; }
+			
 			_closeReference = null;
 			_cancelReference = null;
 			_okReference = null;
@@ -105,6 +112,8 @@ package Dialog {
 			
 			_stage.removeChild(_dialog);
 			_dialog = null;
+			
+			_isDisposed = true;
 		}
 	}
 }

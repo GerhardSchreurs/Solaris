@@ -13,14 +13,18 @@ package {
 	import RectangleSelector.RectangleSelectionEvent;
 	import Ship.Torus;
 	
-	public class Hangar extends Sprite {
+	public class Hangar extends Sprite implements IDisposable {
+		private var UI:LIB_Hangar;
+		
+		private var _disposeAllInFleet:Boolean;
 		private var _fleetIndex:Number = 0;
 		private var _fleet:Vector.<IShip> = new Vector.<IShip>();
-		private var UI:LIB_Hangar;
-		private var _dialog:Dialog;
+		private var _dialog:Dialog //Done;
+		private var _fpsCounter:FPSCounter; //Done
 		private var _shipCurrent:IShip;
-		
-		public var rectangleSelector:RectangleSelector;
+		private var _isDisposed:Boolean;
+		public var _rectangleSelector:RectangleSelector //Done;
+		private var _main:Main;
 		
 		private function get nextShipIndex():Number {
 			if ((_fleetIndex + 1) < _fleet.length) {
@@ -38,10 +42,13 @@ package {
 			}
 		}
 		
-		public function Hangar():void  {
-			this.addEventListener(Event.REMOVED, handleRemoved, false, 0, true);
+		public function Hangar(main:Main):void  {
+			//TODO, this handler, still necessary?
+			//this.addEventListener(Event.REMOVED, handleRemoved, false, 0, true);
 			
-			rectangleSelector = new RectangleSelector(new Rectangle(200,50, 800, 575));
+			_main = main;
+			
+			_rectangleSelector = new RectangleSelector(new Rectangle(200,50, 800, 575));
 			
 			trace('initHangar');
 			
@@ -53,41 +60,38 @@ package {
 			UI.btnNext.addEventListener(MouseEvent.CLICK, handleNextClick, false, 0, true);
 			UI.btnReturn.addEventListener(MouseEvent.CLICK, handleReturnClick, false, 0, true);
 			
+			UI.btnStartEasy.addEventListener(MouseEvent.CLICK, handleStartGameEasy);
+			UI.btnStartHard.addEventListener(MouseEvent.CLICK, handleStartGameHard);
+			
+			
 			var ship:IShip;
 
 			ship = new Ship.Kestrel();
-			ship.hangar = this;
+			ship.rectangleSelector = _rectangleSelector;
 			_fleet.push(ship);
 
 			ship = new Ship.Torus();
-			ship.hangar = this;
+			ship.rectangleSelector = _rectangleSelector;
 			_fleet.push(ship);
 			
 			ship = new Ship.Osprey();
-			ship.hangar = this;
+			ship.rectangleSelector = _rectangleSelector;
 			_fleet.push(ship);
 
-			
-			/*
-			_fleet.push(new Ship.Kestrel(this));
-			_fleet.push(new Ship.Torus(this));
-			_fleet.push(new Ship.Osprey(this));
-			*/
-			
 			setUI();
 			
-			addChild(rectangleSelector);
+			addChild(_rectangleSelector);
 			
-			var fpsCounter:FPSCounter = new FPSCounter();
-			addChild(fpsCounter);
+			_fpsCounter = new FPSCounter();
+			addChild(_fpsCounter);
 		}
 		
-		function clearUI():void {
+		private function clearUI():void {
 			var ship:IShip = _fleet[_fleetIndex];
 			removeChild(ship.shipLayout);
 		}
 		
-		function setUI():void {
+		private function setUI():void {
 			_shipCurrent = _fleet[_fleetIndex];
 			UI.txtName.text = _shipCurrent.shipName;
 			addChild(_shipCurrent.shipLayout);
@@ -98,8 +102,12 @@ package {
 			fillCrew();
 		}
 		
-		function fillCrew():void {
+		private function fillCrew():void {
 			for (var i:Number = 0; i < _shipCurrent.shipCrew.length; i++) {
+				if (i == 3) {
+					trace("cannot exceed 3 crewMembers for display in hangar");
+					return;
+				}
 				var crewMember:ICrew = _shipCurrent.shipCrew[i];
 				var block:MovieClip = UI.getChildByName("blockCrew_" + (i + 1)) as MovieClip;
 				
@@ -107,41 +115,126 @@ package {
 			}
 		}
 		
-		function handlePrevClick(e:MouseEvent):void {
+		private function handlePrevClick(e:MouseEvent):void {
 			clearUI();
 			_fleetIndex = prevShipIndex;
 			setUI();
 		}
 		
-		function handleNextClick(e:MouseEvent):void {
+		private function handleNextClick(e:MouseEvent):void {
 			clearUI();
 			_fleetIndex = nextShipIndex;
 			setUI();
 		}
 		
-		function handleReturnClick(e:MouseEvent):void {
+		private function handleReturnClick(e:MouseEvent):void {
 			if (_dialog == null) {
-				_dialog = new Dialog(this.stage, "Return to home", "Are you sure that you want to leave the hangar?", null, null, handleDialogOk);
+				_dialog = new Dialog(this.stage, "Return to home", "Are you sure that you want to leave the hangar?", handleDialogCancel, handleDialogCancel, handleDialogOk);
+				
 				addChild(_dialog);
 			}
 			
 			_dialog.Show();
 		}
 		
-		function handleDialogOk():void {
-				trace("handleDialogOk");
-				
-				_dialog.Hide();
+		private function handleDialogCancel():void {
+			_dialog.Hide();
+		}
+		
+		private function handleDialogOk():void {
+			_disposeAllInFleet = true;
+			_dialog.Hide();
+			_main.initMenu();
 		}
 		
 		
-		function handleRemoved(e:Event):void {
+		private function handleRemoved(e:Event):void {
 			dispose();
 		}
 		
+		private function handleStartGameEasy(e:MouseEvent):void {
+			startGame(1);
+		}
+		
+		private function handleStartGameHard(e:MouseEvent):void {
+			startGame(2);
+		}
+		
+		private function startGame(difficulty:int):void {
+			_disposeAllInFleet = false;
+			_main.gameData.difficulty = difficulty;
+			_main.gameData.ship = _shipCurrent;
+			_main.initGame();
+		}
+		
+		public function get isDisposed():Boolean {
+			return _isDisposed;
+		}
+		
 		public function dispose():void {
-			this.removeEventListener(Event.REMOVED, handleRemoved);
-			//TODO, implement
+			trace("Hangar.dispose(" + _isDisposed + ")");
+			if (_isDisposed) { return; }
+			
+			var count:int;
+			//this.removeEventListener(Event.REMOVED, handleRemoved);
+			
+			//Event handlers
+			UI.btnPrev.removeEventListener(MouseEvent.CLICK, handlePrevClick);
+			UI.btnNext.removeEventListener(MouseEvent.CLICK, handleNextClick);
+			UI.btnReturn.removeEventListener(MouseEvent.CLICK, handleReturnClick);
+			
+			//FPS
+			removeChild(_fpsCounter);
+			_fpsCounter.dispose();
+			_fpsCounter = null;
+			
+			//DIALOG
+			if (_dialog != null) {
+				removeChild(_dialog);
+				_dialog.dispose();
+				_dialog = null;
+			}
+			
+			//Fleet
+			count = _fleet.length;
+			
+			trace("disposeAllInFleet = " + _disposeAllInFleet);
+			
+			for (var i:int = 0; i < count; i++) {
+				var ship:IShip = _fleet[i];
+				
+				if (ship == _shipCurrent) {
+					removeChild(_shipCurrent.shipLayout);
+					if (_disposeAllInFleet) {
+						ship.dispose();
+						ship = null;
+					}
+				} else {
+					ship.dispose();
+					ship = null;
+				}
+			}
+			
+
+			_fleet.length = 0;
+			_fleet = null;
+			
+			
+			//RectangleSelector (AFTER FLEET, cause they have references
+			//BAD programming... bad..
+			removeChild(_rectangleSelector);
+			_rectangleSelector.dispose();
+			_rectangleSelector = null;
+
+			
+			//UI
+			removeChild(UI);
+			UI = null;
+			
+			//main
+			_main = null;
+			
+			_isDisposed = true;
 		}
 	}
 }
