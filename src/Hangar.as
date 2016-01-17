@@ -1,5 +1,5 @@
 package {
-	import Crew.ICrew;
+	import Crew.Crew;
 	import Debug.FPSCounter;
 	import Dialog.Dialog;
 	import flash.accessibility.ISearchableText;
@@ -108,7 +108,7 @@ package {
 					trace("cannot exceed 3 crewMembers for display in hangar");
 					return;
 				}
-				var crewMember:ICrew = _shipCurrent.shipCrew[i];
+				var crewMember:Crew = _shipCurrent.shipCrew[i];
 				var block:MovieClip = UI.getChildByName("blockCrew_" + (i + 1)) as MovieClip;
 				
 				block.addChild(crewMember.crewPortrait);

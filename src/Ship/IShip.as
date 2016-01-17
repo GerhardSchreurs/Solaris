@@ -3,7 +3,7 @@ package Ship {
 	import flash.display.SpreadMethod;
 	import flash.events.Event;
 	import flash.utils.setTimeout;
-	import Crew.ICrew;
+	import Crew.Crew;
 	import flash.display.MovieClip;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -21,25 +21,31 @@ package Ship {
 	//should be treated as an abstract class
 	public class IShip extends Sprite implements IDisposable {
 		//TODO: improvements possible by reusing vector and other objects instead of recreating them!!!
+		//TODO: reversed forward loops
 		
 		private var _stopNode:Node;
 		private var _shipName:String;
 		private var _shipLayout:Sprite;
+		private var _airLockCount:int;
 		private var _nodes:Vector.<Node>;
+		private var _nodesLength:int;
+		private var _roomsLength:int;
+		private var _leakingNodesLength:int;
 		private var _rooms:Vector.<Room>;
-		private var _crew:Vector.<ICrew>;
+		private var _crew:Vector.<Crew>;
 		private var _nodeIndex:Number = 0;
 		private var _crewIndex:Number = 0;
 		private var _roomIndex:Number = 0;
 		private var _offsetMapX:Number;
 		private var _offsetMapY:Number;
-		private var _selectedCrewMembers:Vector.<ICrew>;
+		private var _selectedCrewMembers:Vector.<Crew>;
 		private var _selectedNodes:Vector.<Node>;
 		private var _selectedNode:Node;
 		private var _isDisposed:Boolean;
 		
 		private var _rectangleSelector:RectangleSelector;
 		private var _timer:uint;
+		private var _frameCounter:int;
 		
 		//NEW
 		protected var _statHealthMax:int
@@ -56,6 +62,97 @@ package Ship {
 		private var _statRocketCount:int;
 		private var _statDroidCount:int;
 		*/
+		
+		public function get statHealthMax():int {
+			return _statHealthMax;
+		}
+		
+		public function set statHealthMax(value:int):void {
+			_statHealthMax = value;
+		}
+		
+		public function get statHealthNow():int {
+			return _statHealthNow;
+		}
+		
+		public function set statHealthNow(value:int):void {
+			_statHealthNow = value;
+		}
+		
+		public function get statShieldMax():int {
+			return _statShieldMax;
+		}
+		
+		public function set statShieldMax(value:int):void {
+			_statShieldMax = value;
+		}
+		
+		public function get statShieldNow():int {
+			return _statShieldNow;
+		}
+		
+		public function set statShieldNow(value:int):void {
+			_statShieldNow = value;
+		}
+		
+		public function get statOxygenMax():int {
+			return _statOxygenMax;
+		}
+		
+		public function set statOxygenMax(value:int):void {
+			_statOxygenMax = value;
+		}
+		
+		public function get statOxygenNow():int {
+			return _statOxygenNow;
+		}
+		
+		public function set statOxygenNow(value:int):void {
+			_statOxygenNow = value;
+		}
+		
+		var _openRooms:Vector.<Room> = new Vector.<Room>();
+		
+		internal function registerAirLock():void {
+			_airLockCount ++;
+		}
+		internal function unregisterAirLock():void {
+			_airLockCount --;
+			
+			if (_airLockCount == 0) {
+				_leakingNodesLength = 0;
+			}
+		}
+		
+		internal function queryStatus(node:Node):void  {
+			if (_airLockCount == 0) {
+				return;
+			}
+			
+			var room:Room = node.room;
+			_openRooms.length = 0;
+			_leakingNodesLength = 0;
+			traverseRooms(room);
+			
+			trace("numberOfLeakingNodes = " + _leakingNodesLength);
+			trace("_openRooms.length = " + _openRooms.length);			
+		}
+		
+		
+		private function traverseRooms(room:Room):void {
+			_openRooms.push(room);
+			
+			var i:int = 0;
+			var count:int = room.connectedOpenRooms.length;
+			_leakingNodesLength += room.nodes.length;
+			
+			for (i = 0; i < count; i++) {
+				if (_openRooms.indexOf(room.connectedOpenRooms[i]) == -1) {
+					traverseRooms(room.connectedOpenRooms[i]);
+				}
+			}
+		}
+		
 		
 		//END NEW
 		
@@ -75,9 +172,9 @@ package Ship {
 		
 		public function IShip() {
 			_nodes = new Vector.<Node>();
-			_crew = new Vector.<ICrew>();
+			_crew = new Vector.<Crew>();
 			_rooms = new Vector.<Room>();
-			_selectedCrewMembers = new Vector.<ICrew>();
+			_selectedCrewMembers = new Vector.<Crew>();
 			_selectedNodes = new Vector.<Node>();
 			
 			addEventListener(Event.ENTER_FRAME, handleEnterFrame, false, 0, false);
@@ -121,7 +218,7 @@ package Ship {
 			_shipLayout = value;
 		}
 		
-		public function get shipCrew():Vector.<ICrew> {
+		public function get shipCrew():Vector.<Crew> {
 			return _crew;
 		}
 		
@@ -138,7 +235,7 @@ package Ship {
 		//{ Crew init
 		protected function constructCrew():void { };
 		
-		protected function addCrew(crew:ICrew, nodeIndex:Number):void {
+		protected function addCrew(crew:Crew, nodeIndex:Number):void {
 			crew.ID = _crewIndex;
 			crew.node = _nodes[nodeIndex];
 			_crew.push(crew);
@@ -183,6 +280,7 @@ package Ship {
 			_rooms[_rooms.length - 1].addNode(node);
 			node.room = _rooms[_rooms.length - 1];
 			_shipLayout.addChild(node.layout);
+			
 			node.layout.x = (node.X * DEFAULTS.NodeSize) + _offsetMapX;
 			node.layout.y = (node.Y * DEFAULTS.NodeSize) + _offsetMapY;
 			node.layout.name = node.ID.toString();
@@ -265,34 +363,40 @@ package Ship {
 			}		
 		}
 		
-		protected function initNodes():void {
-			trace("0:IShip.initNodes() " + this.shipName);
+		protected function initShip():void {
+			trace("0:IShip.initShip() " + this.shipName);
 			
 			var nodeArray:Array = new Array();
 			var currentX:Number = 0;
 			var currentY:Number = -1;
 			
+			//Fills nodeArray[x][y] so that we can reference a node by x,y
+			//Example: node = nodeArray[10][4];
 			initNodeArray(nodeArray);
 			
-			var count:int = _nodes.length;
+			_nodesLength = _nodes.length;
+			_roomsLength = _rooms.length;
+			
+			_statOxygenMax = _nodesLength;
+			_statOxygenNow = _nodesLength;
+			
+			
 			var i:int;
 			
-			for (i = count; i--;) {
+			for (i = _nodesLength; i--;) {
 				var node:Node = _nodes[i];
 				node.layout.fldID.text = node.ID.toString();
 				initNodeNeighbours(nodeArray, node);
 				node.init();
 			}
 			
-			count = _rooms.length;
-			
-			for (i = count; i--;) {
+			for (i = _roomsLength; i--;) {
 				var room:Room = _rooms[i];
 				room.init();
 			}
 			
 			//testNodeOut(_nodes[2]);
-			testRoomOut(_rooms[1]);
+			//testRoomOut(_rooms[1]);
 		}
 		//}
 		
@@ -308,13 +412,25 @@ package Ship {
 			
 			trace(traceLog);
 		}
+		
+		public function testRoomsOut():void {
+			for (var i:int = 0; i < _rooms.length; i++) {
+				testRoomOut(_rooms[i]);
+			}
+		}
 
 		public function testRoomOut(room:Room):void {
 			trace("testing room " + room.ID + " (" + room.nodes[0].ID + "), is outer room: " + room.isOuterRoom);
 			
-			for (var i:int = 0; i < room.connectedRooms.length; i++) {
+			var i:int;
+			
+			for (i = 0; i < room.connectedRooms.length; i++) {
 				trace("connected room " + room.connectedRooms[i].ID + " (" + room.connectedRooms[i].nodes[0].ID + ")");
 			}
+			for (i = 0; i < room.connectedOpenRooms.length; i++) {
+				trace("4:connectedOPEN room " + room.connectedOpenRooms[i].ID + " (" + room.connectedOpenRooms[i].nodes[0].ID + ")");
+			}
+			
 			
 			trace("");
 		}
@@ -350,7 +466,7 @@ package Ship {
 			}
 			
 			var crewLayout:MovieClip = e.currentTarget as MovieClip;
-			var crewMember:ICrew = _crew[Number(crewLayout.name)];
+			var crewMember:Crew = _crew[Number(crewLayout.name)];
 			
 			crewMember.selectMember();
 			_selectedCrewMembers.push(crewMember);
@@ -378,7 +494,7 @@ package Ship {
 			}
 		}
 		
-		private function filterSelectedCrewMembers(element:ICrew, index:int, array:Vector.<ICrew>):Boolean {
+		private function filterSelectedCrewMembers(element:Crew, index:int, array:Vector.<Crew>):Boolean {
 			return (element.isSelected);
 		}
 		
@@ -405,8 +521,8 @@ package Ship {
 					_selectedNodes.push(clickedNode);
 					clickedNode.showPoint();
 					
-					//_selectedCrewMembers[0].path = pathFind(_selectedCrewMembers[0].node, clickedNode);
 					_selectedCrewMembers[0].Path = pathFind(_selectedCrewMembers[0].node, clickedNode);
+					_selectedCrewMembers[0].stateMachine.changeState(new Walk(_selectedCrewMembers[0]));
 				} else {
 					//now, since we have multiple selected crewmembers, we need to get all nodes that are neighbour of clickedNode
 					var neighbourNodes:Vector.<Node> = clickedNode.getNeighbourNodes();
@@ -432,11 +548,22 @@ package Ship {
 		
 		private function handleEnterFrame(e:Event):void {
 			var testing:Boolean = true;
+			_frameCounter ++;
+			
+			if (_frameCounter > DEFAULTS.FrameRate) {
+				_frameCounter = 0;
+			}
 			
 			for (var i:int = 0; i < _crew.length; i ++) {
-				var crewMember:ICrew = _crew[i];
+				var crewMember:Crew = _crew[i];
 				//crewMember.doStuff();
-				crewMember.enterFrame();
+				crewMember.enterFrame(_frameCounter);
+			}
+			
+			if (_airLockCount > 0) {
+				_statOxygenNow = _nodesLength - _leakingNodesLength;
+			} else {
+				_statOxygenNow = _nodesLength;
 			}
 		}
 
@@ -564,6 +691,8 @@ package Ship {
 		
 
 		
+
+		
 		public function dispose():void {
 			trace("IShip.dispose(" + _isDisposed + ") (" + shipName + ")");
 			
@@ -583,7 +712,7 @@ package Ship {
 			count = _crew.length;
 
 			for (i = count; i--;) {
-				var crewMember:ICrew = _crew[i];
+				var crewMember:Crew = _crew[i];
 				var crewLayout:MovieClip = crewMember.crewLayout;
 				
 				crewLayout.removeEventListener(MouseEvent.CLICK, handleCrewClick);
@@ -611,7 +740,7 @@ package Ship {
 			
 			count = _nodes.length;
 			
-			for (var i:int = 0; i < count; i++) {
+			for (i = count; i--;) {
 				var node:Node = _nodes[i];
 				node.layout.removeEventListener(MouseEvent.RIGHT_CLICK, handleNodeRightClick)
 				_shipLayout.removeChild(node.layout);

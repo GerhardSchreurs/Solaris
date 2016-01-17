@@ -1,5 +1,5 @@
 ﻿package Ship {
-	import Crew.ICrew;
+	import Crew.Crew;
 	import Crew.Gerhard;
 	import Crew.Sergay;
 	import Crew.Wolfgang;
@@ -14,8 +14,6 @@
 			
 			_statHealthMax = 30;
 			_statHealthNow = 30;
-			_statOxygenMax = 100;
-			_statOxygenNow = 100;
 			_statShieldMax = 4;
 			_statShieldNow = 1;
 			
@@ -25,7 +23,7 @@
 			
 			constructNodes();
 			constructCrew();
-			initNodes();
+			initShip();
 		}
 		
 		override protected function constructNodes():void {
@@ -315,7 +313,7 @@
 	
 		override protected function constructCrew():void {
 			trace("constructCrew");
-			var member:ICrew;
+			var member:Crew;
 			
 			member = new Gerhard();
 			member.map = nodes;

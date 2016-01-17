@@ -1,5 +1,5 @@
 package Ship {
-	import Crew.ICrew;
+	import Crew.Crew;
 	import Crew.Gerhard;
 	import Crew.Sergay;
 	import Crew.Wolfgang;
@@ -22,7 +22,7 @@ package Ship {
 
 			constructNodes();
 			constructCrew();
-			initNodes();
+			initShip();
 		}
 		
 		override protected function constructNodes():void {

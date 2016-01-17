@@ -1,5 +1,5 @@
 package State {
-	import Crew.ICrew;
+	import Crew.Crew;
 	import Ship.IShip;
 	
 	public final class GameData {
@@ -28,7 +28,7 @@ package State {
 		
 		private var _difficulty:int; //1 or 2
 		private var _ship:IShip;
-		private var _crew:ICrew;
+		private var _crew:Crew;
 		
 		public function get difficulty():int {
 			return _difficulty;

@@ -1,5 +1,5 @@
 package Crew {
-	public class Gerhard extends ICrew {
+	public class Gerhard extends Crew {
 		public function Gerhard() {
 			crewName = "Gerhard";
 			crewLayout = new LIB_Crew_Gerhard();

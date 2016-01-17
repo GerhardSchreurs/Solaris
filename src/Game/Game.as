@@ -2,9 +2,12 @@
 	import Debug.FPSCounter;
 	import flash.display.Sprite;
 	import flash.display.MovieClip;
+	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
 	import RectangleSelector.RectangleSelector;
 	import Ship.IShip;
+	import State.DEFAULTS;
 	import State.GameData;
 	import UI.*;
 	
@@ -22,7 +25,14 @@
 
 		
 		//Panels
-		private var _uiHealthBar:StepComponent;
+		private var _uiHitpoints:StepComponent;
+		private var _uiShield:StepComponent;
+		private var _uiOxygen:BarComponent;
+		private var _uiWarpDrive:BarComponent;
+		private var _uiEvasion:SimpleStatus;
+		private var _uiRockets:SimpleStatus;
+		private var _uiDroids:SimpleStatus;
+		private var _uiFuel:SimpleStatus;
 		
 		public function Game() {
 			_gameData = GameData.getInstance();
@@ -44,25 +54,105 @@
 			
 			addChild(_fpsCounter);
 			
-			
+			//_UI.btnReturn.addEventListener(MouseEvent.CLICK, handleReturnClick);
 			initPanels();
+			
+			this.addEventListener(Event.ENTER_FRAME, handleEnterFrame);
+		}
+		
+		private function handleReturnClick(e:MouseEvent):void {
+			//_ship.testRoomsOut();
+		}
+		
+		private function handleEnterFrame(e:Event):void {
+			_uiOxygen.stepCurrent = _ship.statOxygenNow;
+			_uiOxygen.rerender();
 		}
 		
 		private function initPanels():void {
-			//Health
-			_uiHealthBar = new UI.StepComponent();
-			_uiHealthBar.x = 10;
-			_uiHealthBar.y = 15;
-			_uiHealthBar.icon = new iconHealth;
-			_uiHealthBar.displayWidth = 300;
-			_uiHealthBar.displayHeight = 30;
-			_uiHealthBar.stepsTotal = 30;
-			_uiHealthBar.stepCurrent = 30;
+			//Hitpoints
+			_uiHitpoints = new UI.StepComponent();
+			_uiHitpoints.x = 20;
+			_uiHitpoints.y = DEFAULTS.PanelOffsetTop;
+			_uiHitpoints.icon = new iconHitPoints;
+			_uiHitpoints.displayWidth = 300;
+			_uiHitpoints.displayHeight = 30;
+			_uiHitpoints.stepsTotal = _ship.statHealthMax;
+			_uiHitpoints.stepCurrent = _ship.statHealthNow;
 			
-			_panelTop.addChild(_uiHealthBar);
+			_panelTop.addChild(_uiHitpoints);
 			
-			_uiHealthBar.stepCurrent = 4;
-			_uiHealthBar.rerender();
+			//Shields
+			_uiShield = new StepComponent();
+			_uiShield.x = 370;
+			_uiShield.y = DEFAULTS.PanelOffsetTop;
+			_uiShield.icon = new iconShield;
+			_uiShield.displayWidth = 100;
+			_uiShield.displayHeight = 30;
+			_uiShield.stepsTotal = _ship.statShieldMax;
+			_uiShield.stepCurrent = _ship.statShieldNow;
+			
+			_panelTop.addChild(_uiShield);
+			
+			//Oxygen
+			_uiOxygen = new BarComponent();
+			_uiOxygen.x = 520;
+			_uiOxygen.y = DEFAULTS.PanelOffsetTop;
+			_uiOxygen.icon = new iconOxygen;
+			_uiOxygen.displayWidth = 30;
+			_uiOxygen.displayHeight = 30;
+			_uiOxygen.stepsTotal = _ship.statOxygenMax;
+			_uiOxygen.stepCurrent = _ship.statOxygenNow;
+			
+			_panelTop.addChild(_uiOxygen);
+			
+			//WarpDrive
+			_uiWarpDrive = new BarComponent();
+			_uiWarpDrive.x = 560;
+			_uiWarpDrive.y = DEFAULTS.PanelOffsetTop;
+			_uiWarpDrive.icon = new iconWarpDrive;
+			_uiWarpDrive.displayWidth = 30;
+			_uiWarpDrive.displayHeight = 30;
+			_uiWarpDrive.stepsTotal = _ship.statOxygenMax;
+			_uiWarpDrive.stepCurrent = _ship.statOxygenNow;
+			
+			_panelTop.addChild(_uiWarpDrive);
+			
+			//Evasion
+			_uiEvasion = new SimpleStatus();
+			_uiEvasion.x = 610;
+			_uiEvasion.y = DEFAULTS.PanelOffsetTop;
+			_uiEvasion.icon = new iconEvasion;
+			_uiEvasion.text = _ship.statOxygenNow.toString();
+			
+			_panelTop.addChild(_uiEvasion);
+			
+			//Rockets
+			_uiRockets = new SimpleStatus();
+			_uiRockets.x = 690;
+			_uiRockets.y = DEFAULTS.PanelOffsetTop;
+			_uiRockets.icon = new iconRockets;
+			_uiRockets.text = "hi";
+			
+			addChild(_uiRockets);
+			
+			//Droids
+			_uiDroids = new SimpleStatus();
+			_uiDroids.x = 750;
+			_uiDroids.y = DEFAULTS.PanelOffsetTop;
+			_uiDroids.icon = new iconDroid;
+			_uiDroids.text = "hi";
+			
+			addChild(_uiDroids);
+			
+			//Fuel
+			_uiFuel = new SimpleStatus();
+			_uiFuel.x = 810;
+			_uiFuel.y = DEFAULTS.PanelOffsetTop;
+			_uiFuel.icon = new iconEnergy;
+			_uiFuel.text = "hi";
+			
+			addChild(_uiFuel);
 		}
 	}
 }

@@ -1,4 +1,5 @@
 package Ship {
+	import State.DEFAULTS;
 	import flash.display.MovieClip;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -33,6 +34,8 @@ package Ship {
 		//new
 		public var connectedWalkableNodes:Vector.<Node>;
 		public var room:Room;
+		public var connectedRoom:Room;
+
 		public var ship:IShip;
 		
 		public var ID:Number;
@@ -42,10 +45,10 @@ package Ship {
 		public var Y:Number;
 		public var layout:LIB_Node;
 
-		public var doorL:Boolean;
-		public var doorT:Boolean;
-		public var doorR:Boolean;
-		public var doorB:Boolean;
+		public var hasDoorL:Boolean;
+		public var hasDoorT:Boolean;
+		public var hasDoorR:Boolean;
+		public var hasDoorB:Boolean;
 		
 		public var borderL:Number;
 		public var borderT:Number;
@@ -72,6 +75,7 @@ package Ship {
 		private var _BOTRnode:Node;
 
 		private var _singleConnectedNode:Node;
+		
 		private var _connectedNodesCount:int;
 		private var _connectedWalkableNodesCount:int;
 		private var _connectedDoorsCount:int;
@@ -85,6 +89,8 @@ package Ship {
 		private var _doorGlowFilter:GlowFilter;
 		
 		private var _isDisposed:Boolean;
+		
+		public var hasAirLock:Boolean;
 		
 		public function Node() {
 			layout = new LIB_Node();
@@ -130,6 +136,24 @@ package Ship {
 			initDoors();
 			calculateBounds();
 		}
+		
+		internal function registerAirLock():void {
+			hasAirLock = true;
+			room.registerAirLock();
+			ship.registerAirLock();
+			//ship.registerAirLock(this);
+		}
+		
+		internal function unregisterAirLock():void {
+			hasAirLock = false;
+			ship.unregisterAirLock();
+		}
+		
+		
+		internal function queryStatus():void {
+			ship.queryStatus(this);
+		}
+		
 
 		//{ Asscessors
 			//{ TOP/BOT/MID
@@ -153,7 +177,7 @@ package Ship {
 					_connectedNodesCount += 1;
 					_singleConnectedNode = value;
 					
-					if ((this.borderT == 1) || (this.doorT)) {
+					if ((this.borderT == 1) || (this.hasDoorT)) {
 						canTOPC = true;
 						//new
 						connectedWalkableNodes.push(value);
@@ -181,7 +205,7 @@ package Ship {
 					_connectedNodesCount += 1;
 					_singleConnectedNode = value;
 					
-					if ((this.borderL == 1) || (this.doorL)) {
+					if ((this.borderL == 1) || (this.hasDoorL)) {
 						canMIDL = true;
 						//new
 						connectedWalkableNodes.push(value);
@@ -195,7 +219,7 @@ package Ship {
 					_connectedNodesCount += 1;
 					_singleConnectedNode = value;
 					
-					if ((this.borderR == 1) || (this.doorR)) {
+					if ((this.borderR == 1) || (this.hasDoorR)) {
 						canMIDR = true;
 						//new
 						connectedWalkableNodes.push(value);
@@ -223,7 +247,7 @@ package Ship {
 					_connectedNodesCount += 1;
 					_singleConnectedNode = value;
 					
-					if ((this.borderB == 1) || (this.doorB)) {
+					if ((this.borderB == 1) || (this.hasDoorB)) {
 						canBOTC = true;
 						//new
 						connectedWalkableNodes.push(value);
@@ -402,35 +426,105 @@ package Ship {
 		}
 		
 		public function initDoors():void {
+			if (ID == 29 && ship.shipName == "The Kestrel") {
+				trace("3:wroah");
+			}
+			
 			//Remove Double Doors
-			if (doorT && (_TOPCnode != undefined)) {
-				if (_TOPCnode.doorB) {
+			if (hasDoorT && (_TOPCnode != undefined)) {
+				if (_TOPCnode.hasDoorB) {
 					//remove target doorB
 					_TOPCnode.removeDoorBottom();
 				}
 			}
 			
-			if (doorL && (_MIDLnode != undefined)) {
-				if (_MIDLnode.doorR) {
+			if (hasDoorL && (_MIDLnode != undefined)) {
+				if (_MIDLnode.hasDoorR) {
 					//remove target doorR
 					_MIDLnode.removeDoorRight();
 				}
 			}
 			
+			
+			//Set connected nodes
+			if (hasDoorL && _canMIDL) {
+				layout.doorL.connectedNode = MIDLnode;
+			}
+			if (hasDoorT && _canTOPC) {
+				layout.doorT.connectedNode = TOPCnode;
+			}
+			if (hasDoorR && _canMIDR) {
+				layout.doorR.connectedNode = MIDRnode;
+			}
+			if (hasDoorB && _canBOTC) {
+				layout.doorB.connectedNode = BOTCnode;
+			}
+			
 			//Set outerDoor flags
-			if (doorL && !_canMIDL) {
+			if (hasDoorL && !_canMIDL) {
 				layout.doorL.isOuterDoor = true;
 				isOuterNode = true;
-			} else if (doorT && !_canTOPC) {
+			}
+			if (hasDoorT && !_canTOPC) {
 				layout.doorT.isOuterDoor = true;
 				isOuterNode = true;
-			} else if (doorR && !_canMIDR) {
+			}
+			if (hasDoorR && !_canMIDR) {
 				layout.doorR.isOuterDoor = true;
 				isOuterNode = true;
-			} else if (doorB && !_canBOTC) {
+			}
+			if (hasDoorB && !_canBOTC) {
 				layout.doorB.isOuterDoor = true;
 				isOuterNode = true;
 			}
+			
+			/*
+			if (hasDoorL) {
+				if (_canMIDL) {
+					layout.doorL.connectedNode = MIDLnode;
+				} else {
+					layout.doorL.isOuterDoor = true;
+					isOuterNode = true;
+				}
+			} else if (hasDoorT) {
+				if (_canTOPC) {
+					layout.doorT.connectedNode = TOPCnode;
+				} else {
+					layout.doorT.isOuterDoor = true;
+					isOuterNode = true;
+				}
+			} else if (hasDoorR) {
+				if (_canMIDR) {
+					layout.doorR.connectedNode = MIDRnode;
+				} else {
+					layout.doorR.isOuterDoor = true;
+					isOuterNode = true;
+				}
+			} else if (hasDoorB) {
+				if (_canBOTC) {
+					layout.doorB.connectedNode = BOTCnode;
+				} else {
+					layout.doorB.isOuterDoor = true;
+					isOuterNode = true;
+				}
+			}
+			*/
+			
+			/*
+			if (hasDoorL && !_canMIDL) {
+				layout.doorL.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (hasDoorT && !_canTOPC) {
+				layout.doorT.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (hasDoorR && !_canMIDR) {
+				layout.doorR.isOuterDoor = true;
+				isOuterNode = true;
+			} else if (hasDoorB && !_canBOTC) {
+				layout.doorB.isOuterDoor = true;
+				isOuterNode = true;
+			}
+			*/
 		}	
 		
 		public function setDoors(L:Boolean, T:Boolean, R:Boolean, B:Boolean):void {
@@ -440,7 +534,7 @@ package Ship {
 			layout.doorT.visible = T;
 			layout.doorR.visible = R;
 			layout.doorB.visible = B;
-
+			
 			if (L == false && T == false && R == false && B == false) {
 				_connectedDoorsCount = 0;
 			} else if (L == true && T == true && R == true && B == true) {
@@ -449,34 +543,40 @@ package Ship {
 				_connectedDoorsCount = 1;
 			}
 			
-			doorL = L;
-			doorT = T;
-			doorR = R;
-			doorB = B;
+			hasDoorL = L;
+			hasDoorT = T;
+			hasDoorR = R;
+			hasDoorB = B;
 			
+			//TODO: Try to place doors in wrapper movieclip and handle events
+			//there (optimisation)
 			if (L) {
-				door = layout.doorL as Door;
+				door = layout.doorL;
+				door.node = this;
 				
 				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
 				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
 				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
 			}
 			if (T) {
-				door = layout.doorT as Door;
+				door = layout.doorT;
+				door.node = this;
 				
 				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
 				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
 				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
 			}
 			if (R) {
-				door = layout.doorR as Door;
+				door = layout.doorR;
+				door.node = this;
 				
 				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
 				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
 				door.addEventListener(MouseEvent.CLICK, handleDoorClick);
 			}
 			if (B) {
-				door = layout.doorB as Door;
+				door = layout.doorB;
+				door.node = this;
 				
 				door.addEventListener(MouseEvent.MOUSE_OVER, handleDoorMouseOver);
 				door.addEventListener(MouseEvent.MOUSE_OUT, handleDoorMouseOut);
@@ -512,19 +612,19 @@ package Ship {
 		
 		public function registerOpenDoorL():void {
 			if (layout.doorL != undefined) {
-				registerOpenDoor(layout.doorL as Door);
+				registerOpenDoor(layout.doorL);
 			}
 		}
 		
 		public function registerOpenDoorT():void {
 			if (layout.doorT != undefined) {
-				registerOpenDoor(layout.doorT as Door);
+				registerOpenDoor(layout.doorT);
 			}
 		}
 		
 		public function openDoorT():void {
 			if (layout.doorT != undefined) {
-				openDoor(layout.doorT as Door);
+				openDoor(layout.doorT);
 			}
 			
 			
@@ -537,7 +637,7 @@ package Ship {
 		
 		public function openDoorL():void {
 			if (layout.doorL != undefined) {
-				openDoor(layout.doorL as Door);
+				openDoor(layout.doorL);
 			}
 			/*
 			if (layout.doorL != undefined && !(layout.doorL.currentFrame > 1 && layout.doorL.currentFrame < 10)) {
@@ -548,7 +648,7 @@ package Ship {
 		
 		public function openDoorB():void {
 			if (layout.doorB != undefined) {
-				openDoor(layout.doorB as Door);
+				openDoor(layout.doorB);
 			}
 			
 			/*
@@ -563,32 +663,32 @@ package Ship {
 			//door.gotoAndPlay(2);
 		}
 		
-		public function resetDoors() {
-			if (doorL) {
+		public function resetDoors():void {
+			if (hasDoorL) {
 				layout.doorL.reset();
 			}
-			if (doorT) {
+			if (hasDoorT) {
 				layout.doorT.reset();
 			}
-			if (doorR) {
+			if (hasDoorR) {
 				layout.doorR.reset();
 			}
-			if (doorB) {
+			if (hasDoorB) {
 				layout.doorB.reset();
 			}
 		}
 		
 		public function closeDoors():void {
-			if (doorL) {
+			if (hasDoorL) {
 				layout.doorL.close();
 			}
-			if (doorT) {
+			if (hasDoorT) {
 				layout.doorT.close();
 			}
-			if (doorR) {
+			if (hasDoorR) {
 				layout.doorR.close();
 			}
-			if (doorB) {
+			if (hasDoorB) {
 				layout.doorB.close();
 			}
 			

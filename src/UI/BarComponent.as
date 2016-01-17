@@ -1,12 +1,14 @@
 package UI {
-	import flash.display.MovieClip;
+	import flash.display.Sprite;
+	
+	
 	public class BarComponent extends ProgressBar {
-		private var _icon:MovieClip;
+		private var _icon:Sprite;
 
 		public function BarComponent() {
 		}
 		
-		public function set icon(value:MovieClip):void {
+		public function set icon(value:Sprite):void {
 			_icon = value;
 			
 			_icon.x = 15 - (_icon.width / 2);

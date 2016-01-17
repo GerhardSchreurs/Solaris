@@ -14,8 +14,6 @@ package UI {
 		}
 		
 		override public function rerender():void {
-			trace("njaa" + getQualifiedClassName(this));
-			
 			drawProgress();
 		}
 		

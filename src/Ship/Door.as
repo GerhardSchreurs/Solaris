@@ -10,9 +10,13 @@ package Ship {
 		private var _isDisposed:Boolean;
 		private var _doorGlowFilter:GlowFilter;
 		private var _registerCount:int;
-		public var room:Room;
 		
+		public var node:Node;
+		public var connectedNode:Node;
+		
+		public var isOpenedClosedManually:Boolean;
 		public var isOpenedManually:Boolean;
+		public var isClosedManually:Boolean;
 		public var isOpening:Boolean;
 		public var isClosing:Boolean;
 		public var isOpened:Boolean;
@@ -92,7 +96,7 @@ package Ship {
 		
 		function handleClick(e:MouseEvent):void {
 			//filters = [];
-			openclose();
+			openclose(true);
 		}
 		
 		
@@ -110,18 +114,43 @@ package Ship {
 			}
 		}
 		
-		public function openclose():void {
+		public function openclose(manually:Boolean = false):void {
 			if (_registerCount > 0) {
 				return;
 			}
 			
 			queryDoorStatus();
 			
-			if (isClosed || isClosing) {
-				isOpenedManually = true;
-			} else {
-				isOpenedManually = false;
+			isOpenedClosedManually = manually;
+			
+			if (manually) {
+				if (isClosed || isClosing) {
+					isOpenedManually = true;
+					isClosedManually = false;
+					
+					if (_isOuterDoor) {
+						trace("3:AIRLOCK");
+						node.registerAirLock();
+					} else {
+						node.room.addOpenRoom(connectedNode.room);
+						connectedNode.room.addOpenRoom(node.room);
+					}
+				} else {
+					if (_isOuterDoor) {
+						trace("3:UNREGISTER AIRLOCK");
+						node.unregisterAirLock();
+					} else {
+						node.room.removeOpenRoom(connectedNode.room);
+						connectedNode.room.removeOpenRoom(node.room);
+					}
+					
+					isOpenedManually = false;
+					isClosedManually = true;
+				}
+				
+				node.queryStatus();
 			}
+			
 			
 			
 			if (isClosed) {
@@ -154,9 +183,6 @@ package Ship {
 			}
 			
 			if (isOpenedManually) {
-				if (_isOuterDoor) {
-					trace("3:AIRLOCK");
-				}
 			} else {
 				clearTimeout(_closeReference);
 				_closeReference = setTimeout(closeIT, 850);
@@ -164,7 +190,7 @@ package Ship {
 
 		}
 		
-		public function reset() {
+		public function reset():void {
 			_registerCount = 0;
 		}
 		
@@ -211,7 +237,7 @@ package Ship {
 			removeEventListener(MouseEvent.CLICK, handleClick);
 
 			_doorGlowFilter = null;
-			room = null;
+			node = null;
 			
 			_isDisposed = true;
 		}

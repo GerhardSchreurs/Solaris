@@ -9,24 +9,57 @@ package Ship {
 		public var xStop:int = -1;
 		public var yStop:int = -1;
 		
-		public var isLeaking:Boolean;
+		public var hasAirLock:Boolean;
 		public var isOuterRoom:Boolean;
 		
 		private var _isDisposed:Boolean;
 		private var _connectedRooms:Vector.<Room>;
+		private var _connectedOpenRooms:Vector.<Room>;
+
+		private var _airLockCount:int;
+
 		
 		public function Room() {
 			nodes = new Vector.<Node>();
 			_connectedRooms = new Vector.<Room>();
+			_connectedOpenRooms = new Vector.<Room>();
 		}
 		
-		public function triggerLeak() {
-			isLeaking = true;
+		public function registerAirLock():void {
+			hasAirLock = true;
+			_airLockCount ++;
+		}
+		
+		public function unregisterAirLock():void {
+			_airLockCount --;
 		}
 		
 		public function get connectedRooms():Vector.<Room> {
 			return _connectedRooms;
 		}
+		
+		public function get connectedOpenRooms():Vector.<Room> {
+			return _connectedOpenRooms;
+		}
+		
+		public function addOpenRoom(room:Room):void {
+			trace("Room.addOpenRoom()");
+			if (_connectedOpenRooms.indexOf(room) == -1) {
+				trace("Room.addOpenRoom() room not found, adding");
+				_connectedOpenRooms.push(room);
+			}
+		}
+		
+		public function removeOpenRoom(room:Room):void {
+			trace("Room.removeOpenRoom()");
+			var index:int = _connectedOpenRooms.indexOf(room);
+			
+			if (index > -1) {
+				trace("Room.removeOpenRoom() room found, removing");
+				_connectedOpenRooms.splice(index, 1);
+			}
+		}
+		
 
 		public function addNode(node:Node):void {
 			nodes.push(node);
@@ -63,7 +96,7 @@ package Ship {
 			}
 		}
 		
-		public function init() {
+		public function init():void {
 			width = xStop - xStart + 1;
 			height = yStop - yStart + 1;
 			

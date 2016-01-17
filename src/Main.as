@@ -7,7 +7,9 @@ package {
 	import flash.display.StageScaleMode;
 	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
+	import Ship.Kestrel;
 	import Ship.Node;
+	import Ship.Torus;
 	import State.GameData;
 	import Game.Game;
 	
@@ -37,6 +39,9 @@ package {
 			//var objSound:LIB_Music_track1  = new LIB_Music_track1();
 			//objSound.play();
 		  
+			//preInitGame();
+			//initGame();
+			
 			
 			initMenu();
 			
@@ -59,6 +64,17 @@ package {
 			var objSystem:SupportSystem = new SupportSystem(1);
 			*/
 		}
+		
+		private function preInitGame():void {
+			//for debug purposes
+			
+			var ship:Kestrel = new Kestrel();
+			ship.shipLayout.x = 300;
+			ship.shipLayout.y = 150;
+			gameData.ship = ship;
+			gameData.difficulty = 1;
+		}
+		
 		
 		public function initGame():void {
 			cleanUp();

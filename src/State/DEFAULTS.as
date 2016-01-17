@@ -9,5 +9,9 @@ package State {
 		public static const DoorAnimationStartFrame:int = 1;
 		public static const DoorAnimationMidFrame:int = 10;
 		public static const DoorAnimationStopFrame:int = 20;
+		
+		//Game
+		public static const PanelOffsetTop:int = 20;
+		public static const FrameRate:int = 24;
 	}
 }

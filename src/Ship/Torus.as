@@ -1,5 +1,5 @@
 package Ship {
-	import Crew.ICrew;
+	import Crew.Crew;
 
 	import Crew.Gerhard;
 	
@@ -20,11 +20,11 @@ package Ship {
 
 			constructNodes();
 			constructCrew();
-			initNodes();
+			initShip();
 		}
 		
 		override protected function constructCrew():void {
-			var member:ICrew;
+			var member:Crew;
 			
 			member = new Gerhard();
 			member.map = nodes;
