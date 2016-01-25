@@ -1,6 +1,6 @@
 package State {
 	import Crew.Crew;
-	import Ship.IShip;
+	import Ship.Ship;
 	
 	public final class GameData {
 		//{ Singelton init
@@ -27,7 +27,7 @@ package State {
 		}
 		
 		private var _difficulty:int; //1 or 2
-		private var _ship:IShip;
+		private var _ship:Ship;
 		private var _crew:Crew;
 		
 		public function get difficulty():int {
@@ -38,11 +38,11 @@ package State {
 			_difficulty = value;
 		}
 		
-		public function get ship():IShip {
+		public function get ship():Ship {
 			return _ship;
 		}
 		
-		public function set ship(value:IShip):void {
+		public function set ship(value:Ship):void {
 			_ship = value;
 		}
 	}

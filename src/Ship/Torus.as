@@ -3,7 +3,7 @@ package Ship {
 
 	import Crew.Gerhard;
 	
-	public class Torus extends IShip {
+	public class Torus extends Ship {
 		
 		public function Torus() {
 			this.shipName = "The Torus";

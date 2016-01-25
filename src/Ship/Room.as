@@ -2,6 +2,7 @@ package Ship {
 	public class Room implements IDisposable {
 		public var ID:int;
 		public var nodes:Vector.<Node>;
+		public var nodesLength:int = 0;
 		public var width:int;
 		public var height:int;
 		public var xStart:int = -1;
@@ -24,6 +25,17 @@ package Ship {
 			_connectedRooms = new Vector.<Room>();
 			_connectedOpenRooms = new Vector.<Room>();
 		}
+		
+		public function update(tick:int):void {
+			//To be implemented!
+			var i:int;
+			
+			//RoomComponent.update();
+			for (i = nodesLength; i--; ) {
+				nodes[i].update(tick);
+			}
+		}
+		
 		
 		public function registerAirLock():void {
 			hasAirLock = true;
@@ -82,6 +94,8 @@ package Ship {
 			if (node.Y > yStop) {
 				yStop = node.Y;
 			}
+			
+			nodesLength ++;
 		}
 		
 		public function highLightOn():void {

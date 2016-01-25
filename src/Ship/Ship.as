@@ -15,11 +15,11 @@ package Ship {
     import flash.geom.Point;
 	import State.*;
 	import flash.utils.getTimer;
+	import State.States.Walk;
 
 	//}  
 	
-	//should be treated as an abstract class
-	public class IShip extends Sprite implements IDisposable {
+	public class Ship extends Sprite implements IDisposable {
 		//TODO: improvements possible by reusing vector and other objects instead of recreating them!!!
 		//TODO: reversed forward loops
 		
@@ -30,6 +30,7 @@ package Ship {
 		private var _nodes:Vector.<Node>;
 		private var _nodesLength:int;
 		private var _roomsLength:int;
+		private var _crewLength:int;
 		private var _leakingNodesLength:int;
 		private var _rooms:Vector.<Room>;
 		private var _crew:Vector.<Crew>;
@@ -170,7 +171,7 @@ package Ship {
 		}
 		
 		
-		public function IShip() {
+		public function Ship() {
 			_nodes = new Vector.<Node>();
 			_crew = new Vector.<Crew>();
 			_rooms = new Vector.<Room>();
@@ -376,6 +377,7 @@ package Ship {
 			
 			_nodesLength = _nodes.length;
 			_roomsLength = _rooms.length;
+			_crewLength = _crew.length;
 			
 			_statOxygenMax = _nodesLength;
 			_statOxygenNow = _nodesLength;
@@ -521,8 +523,8 @@ package Ship {
 					_selectedNodes.push(clickedNode);
 					clickedNode.showPoint();
 					
-					_selectedCrewMembers[0].Path = pathFind(_selectedCrewMembers[0].node, clickedNode);
-					_selectedCrewMembers[0].stateMachine.changeState(new Walk(_selectedCrewMembers[0]));
+					//_selectedCrewMembers[0].Path = pathFind(_selectedCrewMembers[0].node, clickedNode);
+					_selectedCrewMembers[0].stateMachine.changeState(new Walk(_selectedCrewMembers[0], pathFind(_selectedCrewMembers[0].node, clickedNode)));
 				} else {
 					//now, since we have multiple selected crewmembers, we need to get all nodes that are neighbour of clickedNode
 					var neighbourNodes:Vector.<Node> = clickedNode.getNeighbourNodes();
@@ -532,8 +534,13 @@ package Ship {
 							neighbourNodes[i].showPoint();
 							_selectedNodes.push(neighbourNodes[i]);
 							//_selectedCrewMembers[i].path = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
-							_selectedCrewMembers[i].Path = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
-						} else {
+							//_selectedCrewMembers[i].Path = pathFind(_selectedCrewMembers[i].node, neighbourNodes[i]);
+							
+							
+							_selectedCrewMembers[i].stateMachine.changeState(new Walk(_selectedCrewMembers[i], pathFind(_selectedCrewMembers[i].node, clickedNode)));
+
+						
+							} else {
 							//_selectedCrewMembers[i].deselectMember();
 						}
 					}
@@ -548,23 +555,35 @@ package Ship {
 		
 		private function handleEnterFrame(e:Event):void {
 			var testing:Boolean = true;
+			var i:int = 0;
+			
 			_frameCounter ++;
 			
 			if (_frameCounter > DEFAULTS.FrameRate) {
 				_frameCounter = 0;
 			}
 			
-			for (var i:int = 0; i < _crew.length; i ++) {
-				var crewMember:Crew = _crew[i];
-				//crewMember.doStuff();
-				crewMember.enterFrame(_frameCounter);
+			//rooms
+			for (i = _roomsLength; i--; ) {
+				_rooms[i].update(_frameCounter);
 			}
 			
+			//crew
+			for (i = _crewLength; i--; ) {
+				//Notice! (_crew[i] as Agent).update!!!!
+				
+				_crew[i].update(_frameCounter);
+				_crew[i].enterFrame(_frameCounter);
+			}
+
+			
+			/* UNCOMMENTEN OM AIRLOCK TE HERSTELLEN!
 			if (_airLockCount > 0) {
 				_statOxygenNow = _nodesLength - _leakingNodesLength;
 			} else {
 				_statOxygenNow = _nodesLength;
 			}
+			*/
 		}
 
 		
@@ -689,12 +708,8 @@ package Ship {
 			return _isDisposed;
 		}
 		
-
-		
-
-		
 		public function dispose():void {
-			trace("IShip.dispose(" + _isDisposed + ") (" + shipName + ")");
+			trace("Ship.dispose(" + _isDisposed + ") (" + shipName + ")");
 			
 			if (_isDisposed) {
 				return;

@@ -6,7 +6,6 @@ package Ship {
 	import flash.geom.ColorTransform;
 	import flash.geom.Point;
 	import flash.text.TextColorType;
-	import Ship.Enum.Compas;
 	import Ship.Enum.Navigation;
 	import Ship.Enum.Thickness;
 	import State.*;
@@ -33,10 +32,11 @@ package Ship {
 		
 		//new
 		public var connectedWalkableNodes:Vector.<Node>;
+		public var doors:Vector.<Door>;
 		public var room:Room;
 		public var connectedRoom:Room;
 
-		public var ship:IShip;
+		public var ship:Ship;
 		
 		public var ID:Number;
 		private var _parentNode:Node;
@@ -95,6 +95,7 @@ package Ship {
 		public function Node() {
 			layout = new LIB_Node();
 			connectedWalkableNodes = new Vector.<Node>;
+			doors = new Vector.<Door>();
 			_doorGlowFilter = new GlowFilter();
 			
 			colorOff.color = 0xE6E2DB;
@@ -135,6 +136,17 @@ package Ship {
 			checkForDeadEnds();
 			initDoors();
 			calculateBounds();
+		}
+		
+		public function update(tick:int):void {
+			var i:int;
+			
+			
+			/*
+			for (i == nodesLength; i--) {
+				nodes[i].update();
+			}
+			*/
 		}
 		
 		internal function registerAirLock():void {
@@ -449,6 +461,7 @@ package Ship {
 			//Set connected nodes
 			if (hasDoorL && _canMIDL) {
 				layout.doorL.connectedNode = MIDLnode;
+				doors.push(layout.doorL);
 			}
 			if (hasDoorT && _canTOPC) {
 				layout.doorT.connectedNode = TOPCnode;

@@ -31,7 +31,7 @@
 		private var _pathIndex:int;
 		private var _printDebug:Boolean = false;
 		private var _lastDoorNode:Node;
-		private var _directions:Directions;
+		public var _directions:Directions;
 		
 		private var nodeSize:int = DEFAULTS.NodeSize;
 		private var nodeSizeHalf:int = DEFAULTS.NodeSize / 2;
@@ -104,6 +104,10 @@
 			_speedDiagonal = _speed * .50;
 			
 			_directions = DirectionsFactory.create(_speed);
+		}
+		
+		public function get speed():Number {
+			return _speed;
 		}
 		
 		public function set map(value:Vector.<Node>):void {

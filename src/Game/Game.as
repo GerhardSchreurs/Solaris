@@ -6,7 +6,7 @@
 	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
 	import RectangleSelector.RectangleSelector;
-	import Ship.IShip;
+	import Ship.Ship;
 	import State.DEFAULTS;
 	import State.GameData;
 	import UI.*;
@@ -19,7 +19,7 @@
 		private var _panelBot:Sprite;
 		private var _shipContainer:Sprite;
 		private var _gameData:GameData;
-		private var _ship:IShip;
+		private var _ship:Ship;
 		public var _rectangleSelector:RectangleSelector;
 		private var _fpsCounter:FPSCounter;
 

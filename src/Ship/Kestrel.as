@@ -3,9 +3,9 @@
 	import Crew.Gerhard;
 	import Crew.Sergay;
 	import Crew.Wolfgang;
-	import Ship.IShip;
+	import Ship.Ship;
 	
-	public class Kestrel extends IShip {
+	public class Kestrel extends Ship {
 		public function Kestrel() {
 			shipName = "The Kestrel";
 			shipLayout = new LIB_Kestrel();

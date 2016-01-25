@@ -3,9 +3,9 @@ package Ship {
 	import Crew.Gerhard;
 	import Crew.Sergay;
 	import Crew.Wolfgang;
-	import Ship.IShip;
+	import Ship.Ship;
 
-	public class Osprey extends IShip {
+	public class Osprey extends Ship {
 		public function Osprey() {
 			shipName = "The Osprey";
 			shipLayout = new LIB_Osprey();

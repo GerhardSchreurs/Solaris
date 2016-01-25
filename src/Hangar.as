@@ -8,7 +8,7 @@ package {
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
-	import Ship.IShip;
+	import Ship.Ship;
 	import RectangleSelector.RectangleSelector;
 	import RectangleSelector.RectangleSelectionEvent;
 	import Ship.Torus;
@@ -18,10 +18,10 @@ package {
 		
 		private var _disposeAllInFleet:Boolean;
 		private var _fleetIndex:Number = 0;
-		private var _fleet:Vector.<IShip> = new Vector.<IShip>();
+		private var _fleet:Vector.<Ship> = new Vector.<Ship>();
 		private var _dialog:Dialog //Done;
 		private var _fpsCounter:FPSCounter; //Done
-		private var _shipCurrent:IShip;
+		private var _shipCurrent:Ship;
 		private var _isDisposed:Boolean;
 		public var _rectangleSelector:RectangleSelector //Done;
 		private var _main:Main;
@@ -64,7 +64,7 @@ package {
 			UI.btnStartHard.addEventListener(MouseEvent.CLICK, handleStartGameHard);
 			
 			
-			var ship:IShip;
+			var ship:Ship;
 
 			ship = new Ship.Kestrel();
 			ship.rectangleSelector = _rectangleSelector;
@@ -87,7 +87,7 @@ package {
 		}
 		
 		private function clearUI():void {
-			var ship:IShip = _fleet[_fleetIndex];
+			var ship:Ship = _fleet[_fleetIndex];
 			removeChild(ship.shipLayout);
 		}
 		
@@ -201,7 +201,7 @@ package {
 			trace("disposeAllInFleet = " + _disposeAllInFleet);
 			
 			for (var i:int = 0; i < count; i++) {
-				var ship:IShip = _fleet[i];
+				var ship:Ship = _fleet[i];
 				
 				if (ship == _shipCurrent) {
 					removeChild(_shipCurrent.shipLayout);
